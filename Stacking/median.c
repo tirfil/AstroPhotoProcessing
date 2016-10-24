@@ -100,6 +100,9 @@ void process_input_fits(char* path){
 					}				
 				}
 			}
+			// close and free
+			free(image);
+			fits_close_file(fptr, &status);
 		}
 	}
 }
