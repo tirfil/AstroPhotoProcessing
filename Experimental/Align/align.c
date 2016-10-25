@@ -44,6 +44,7 @@ int read_fits(char* path, unsigned short** image)
 			
 			if (bitpix == 16){
 				fits_read_img(fptr,TSHORT,1,nelements,NULL,*image, &anynul, &status);
+				fits_close_file(fptr, &status);
 				if (status != 0) printf("status = %d\n",status);
 				return status;
 			} 
@@ -53,6 +54,7 @@ int read_fits(char* path, unsigned short** image)
 				int i;
 				image8 = malloc(sizeof(unsigned char)*nelements);
 				fits_read_img(fptr,TBYTE,1,nelements,NULL,image8, &anynul, &status);
+				fits_close_file(fptr, &status);
 				if (status != 0) printf("status = %d\n",status);
 				// convert from 8 bit to 16 bit
 				for(i=0; i < nelements; i++)

@@ -37,8 +37,12 @@ int read_fits(char* path, unsigned short** image)
 			
 			if (bitpix == 16){
 				fits_read_img(fptr,TSHORT,1,nelements,NULL,*image, &anynul, &status);
+				fits_close_file(fptr, &status);
 				return status;
-			} 
+			} else {
+				fits_close_file(fptr, &status);
+				return -1;
+			}
 		  }
      }
      return -1;		
