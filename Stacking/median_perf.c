@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <dirent.h>
 #include "fitsio.h"
+#include <time.h>
 
 struct ushort_node {
 	unsigned short 		value;
@@ -47,6 +48,10 @@ void process_input_fits(char* path){
 				width = naxes[0];
 				height = naxes[1];
 				root = malloc(sizeof(ushort_node*)*nelements);
+				if (root == NULL){
+						printf("malloc failed - root\n");
+						return;
+				}	
 				for (i=0; i<nelements; i++){
 					root[i] = NULL;
 				}
@@ -59,11 +64,19 @@ void process_input_fits(char* path){
 			}
 			
 			image = malloc(sizeof(short)*nelements);
+			if (image == NULL){
+				printf("malloc failed - image\n");
+				return;
+			}
 			
 			if (bitpix == 16){
 				fits_read_img(fptr,TSHORT,1,nelements,NULL,image, &anynul, &status);
 				for (i=0; i<nelements; i++){
 					item = malloc(sizeof(ushort_node));
+					if (item == NULL){
+						printf("malloc failed - item\n");
+						return;
+					}	
 					item->value = image[i];
 					item->next = NULL;
 					// insert and sort
@@ -121,6 +134,10 @@ void write_output_fits(char* filename, int file_count){
 	naxes[0] = width;
 	naxes[1] = height;
 	imageout = malloc(sizeof(unsigned short)*nelements);
+	if (imageout == NULL){
+		printf("malloc failed - imageout\n");
+		return;
+	}	
 	for(i=0;i<nelements;i++){
 		tmp = root[i];
 		for(j=0;j<file_count;j++){
@@ -150,8 +167,9 @@ int main(int argc, char* argv[]) {
     char path[256];
     int file_count;
     char ps_cmd[256];
+    time_t start;
 
-	
+	start = time(NULL);
 	if (argc != 3){
 		printf("Usage: %s <directory path> <output fits file>\n",argv[0]);
 		return -1;
@@ -183,6 +201,8 @@ int main(int argc, char* argv[]) {
 	write_output_fits(output_file,file_count);
 	
 	system(ps_cmd);
+	
+	printf("Duration is %f sec\n",difftime(time(NULL),start));
 	
 	return 0;
 }
