@@ -58,10 +58,10 @@ void process_input_fits(char* path){
 				}
 			}
 			
-			image = malloc(sizeof(short)*nelements);
+			image = malloc(sizeof(unsigned short)*nelements);
 			
 			if (bitpix == 16){
-				fits_read_img(fptr,TSHORT,1,nelements,NULL,image, &anynul, &status);
+				fits_read_img(fptr,TUSHORT,1,nelements,NULL,image, &anynul, &status);
 				for (i=0; i<nelements; i++){
 					item = malloc(sizeof(ushort_node));
 					item->value = image[i];
@@ -136,7 +136,7 @@ void write_output_fits(char* filename, int file_count){
 	free(root);
 	fits_create_file(&fptrout,filename, &status);
 	fits_create_img(fptrout, SHORT_IMG, naxis, naxes, &status);
-	fits_write_img(fptrout, TSHORT, 1, nelements, imageout, &status);
+	fits_write_img(fptrout, TUSHORT, 1, nelements, imageout, &status);
 	fits_close_file(fptrout, &status);
 	free(imageout);
 }

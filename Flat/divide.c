@@ -33,10 +33,10 @@ int read_fits(char* path, unsigned short** image)
 				}
 			}
 			
-			*image = malloc(sizeof(short)*nelements);
+			*image = malloc(sizeof(unsigned short)*nelements);
 			
 			if (bitpix == 16){
-				fits_read_img(fptr,TSHORT,1,nelements,NULL,*image, &anynul, &status);
+				fits_read_img(fptr,TUSHORT,1,nelements,NULL,*image, &anynul, &status);
 				fits_close_file(fptr, &status);
 				return status;
 			} else {
@@ -59,7 +59,7 @@ int write_fits(char* path,unsigned short* image)
 	naxes[1] = height;
 	fits_create_file(&fptrout,path, &status);
 	fits_create_img(fptrout, SHORT_IMG, naxis, naxes, &status);
-	fits_write_img(fptrout, TSHORT, 1, nelements, image, &status);
+	fits_write_img(fptrout, TUSHORT, 1, nelements, image, &status);
 	fits_close_file(fptrout, &status);
 }
 
