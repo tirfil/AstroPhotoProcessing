@@ -7,7 +7,7 @@
 #include "fitsio.h"
 #include <time.h>
 
-struct ushort_node {
+struct __attribute__((__packed__)) ushort_node {
 	unsigned short 		value;
 	struct ushort_node 	*next;
 };
@@ -168,6 +168,8 @@ int main(int argc, char* argv[]) {
     int file_count;
     char ps_cmd[256];
     time_t start;
+    
+    printf("struct size is %ld\n",sizeof(ushort_node));
 
 	start = time(NULL);
 	if (argc != 3){
