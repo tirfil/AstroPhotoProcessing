@@ -63,14 +63,14 @@ void process_input_fits(char* path){
 				}
 			}
 			
-			image = malloc(sizeof(short)*nelements);
+			image = malloc(sizeof(unsigned short)*nelements);
 			if (image == NULL){
 				printf("malloc failed - image\n");
 				return;
 			}
 			
 			if (bitpix == 16){
-				fits_read_img(fptr,TSHORT,1,nelements,NULL,image, &anynul, &status);
+				fits_read_img(fptr,TUSHORT,1,nelements,NULL,image, &anynul, &status);
 				for (i=0; i<nelements; i++){
 					item = malloc(sizeof(ushort_node));
 					if (item == NULL){
@@ -153,7 +153,7 @@ void write_output_fits(char* filename, int file_count){
 	free(root);
 	fits_create_file(&fptrout,filename, &status);
 	fits_create_img(fptrout, SHORT_IMG, naxis, naxes, &status);
-	fits_write_img(fptrout, TSHORT, 1, nelements, imageout, &status);
+	fits_write_img(fptrout, TUSHORT, 1, nelements, imageout, &status);
 	fits_close_file(fptrout, &status);
 	free(imageout);
 }
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 	
-	sprintf(ps_cmd,"ps -un %d",getpid());
+	sprintf(ps_cmd,"ps -un %d; free",getpid());
 	system(ps_cmd);
 	
 	directory = argv[1];

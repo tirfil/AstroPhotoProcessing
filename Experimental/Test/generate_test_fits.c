@@ -20,7 +20,7 @@ int write_fits(char* path,unsigned short* image)
 	naxes[1] = height;
 	fits_create_file(&fptrout,path, &status);
 	fits_create_img(fptrout, SHORT_IMG, naxis, naxes, &status);
-	fits_write_img(fptrout, TSHORT, 1, nelements, image, &status);
+	fits_write_img(fptrout, TUSHORT, 1, nelements, image, &status);
 	fits_close_file(fptrout, &status);
 }
 
