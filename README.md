@@ -32,7 +32,9 @@ Stack fits files located into a directory and create a new fits file from median
 
 This method enables to improve S/N.
 
-syntax: median < fits files directorry > < output fits file >
+syntax: median < fits files directory > < output fits file >
+
+Note: For big fits data (big fits size or high number of fits) see Experimental/LowMem/median.c. 
 
 ## Offset and Dark
 
