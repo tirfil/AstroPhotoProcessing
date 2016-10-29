@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
 	unsigned short average;
 	
 	if (argc != 3){
-		printf("Usage: %s <raw> <flat>\n",argv[0]);
+		printf("Usage: %s <raw> <flat> <result>\n",argv[0]);
 		return -1;
 	}
 	
@@ -96,8 +96,8 @@ int main(int argc, char* argv[]) {
 				lint = (unsigned long)a[i]*(unsigned long)average;
 				c[i] = (unsigned short)(lint/(unsigned long)b[i]);
 			}
-			remove("div.fits");
-			if (write_fits("div.fits",c) == 0){
+			remove(argv[3]);
+			if (write_fits(argv[3],c) == 0){
 				free(a); free(b); free(c);
 				return 0;
 			}

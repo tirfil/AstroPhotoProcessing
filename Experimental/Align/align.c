@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
 	
 	
 	if (argc != 3){
-		printf("Usage: %s <image1> <image2>\n",argv[0]);
+		printf("Usage: %s <image1> <image2> <result>\n",argv[0]);
 		return -1;
 	}
 	
@@ -160,8 +160,8 @@ int main(int argc, char* argv[]) {
 						c[x+y*width] = b[x0+y0*width];
 				}
 			}
-		   remove("align.fits");
-		   if (write_fits("align.fits",c) == 0){
+		   remove(argv[3]);
+		   if (write_fits(argv[3],c) == 0){
 				free(a); free(b); free(c);
 				return 0;
 			}

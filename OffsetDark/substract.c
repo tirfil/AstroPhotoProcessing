@@ -71,8 +71,8 @@ int main(int argc, char* argv[]) {
 	int i;
 	int errors = 0;
 	
-	if (argc != 3){
-		printf("Usage: %s <raw> <offset or dark>\n",argv[0]);
+	if (argc != 4){
+		printf("Usage: %s <raw> <offset or dark> <result>\n",argv[0]);
 		return -1;
 	}
 	
@@ -89,8 +89,8 @@ int main(int argc, char* argv[]) {
 				}
 			}
 			printf("%d errors\n",errors);
-			remove("diff.fits");
-			if (write_fits("diff.fits",c) == 0){
+			remove(argv[3]);
+			if (write_fits(argv[3],c) == 0){
 				free(a); free(b); free(c);
 				return 0;
 			}
