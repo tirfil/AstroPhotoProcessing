@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
 	unsigned short maxi=0;
 	unsigned short average;
 	
-	if (argc != 3){
+	if (argc != 4){
 		printf("Usage: %s <raw> <flat> <result>\n",argv[0]);
 		return -1;
 	}

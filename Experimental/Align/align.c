@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 	pivot=1;
 	
 	
-	if (argc != 3){
+	if (argc != 4){
 		printf("Usage: %s <image1> <image2> <result>\n",argv[0]);
 		return -1;
 	}
