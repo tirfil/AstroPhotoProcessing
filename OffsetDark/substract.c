@@ -70,6 +70,8 @@ int main(int argc, char* argv[]) {
 	long nelements;
 	int i;
 	int errors = 0;
+	unsigned short maxi = 0;
+	unsigned short delta;
 	
 	if (argc != 4){
 		printf("Usage: %s <raw> <offset or dark> <result>\n",argv[0]);
@@ -85,10 +87,13 @@ int main(int argc, char* argv[]) {
 					c[i] = a[i] - b[i];
 				else {
 					c[i] = 0;
+					delta = b[i] - a[i];
+					if (delta > maxi) maxi = delta;
 					errors++;
 				}
 			}
-			printf("%d errors\n",errors);
+			printf("%d errors : maxi =%d\n",errors,maxi);
+			
 			remove(argv[3]);
 			if (write_fits(argv[3],c) == 0){
 				free(a); free(b); free(c);
