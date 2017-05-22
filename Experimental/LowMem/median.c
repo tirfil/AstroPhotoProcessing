@@ -134,7 +134,7 @@ void write_output_fits(char* filename, unsigned short* imageout){
 	naxes[0] = width;
 	naxes[1] = height;
 	fits_create_file(&fptrout,filename, &status);
-	fits_create_img(fptrout, SHORT_IMG, naxis, naxes, &status);
+	fits_create_img(fptrout, USHORT_IMG, naxis, naxes, &status);
 	fits_write_img(fptrout, TUSHORT, 1, nelements, imageout, &status);
 	fits_close_file(fptrout, &status);
 	free(imageout);

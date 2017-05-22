@@ -48,6 +48,7 @@ int read_fits(char* path, unsigned short** image)
      return -1;		
 }
 
+
 int write_fits(char* path,unsigned short* image)
 {
 	fitsfile *fptrout;
@@ -58,7 +59,7 @@ int write_fits(char* path,unsigned short* image)
     naxes[0] = width;
 	naxes[1] = height;
 	fits_create_file(&fptrout,path, &status);
-	fits_create_img(fptrout, SHORT_IMG, naxis, naxes, &status);
+	fits_create_img(fptrout, USHORT_IMG, naxis, naxes, &status);
 	fits_write_img(fptrout, TUSHORT, 1, nelements, image, &status);
 	fits_close_file(fptrout, &status);
 }
@@ -94,7 +95,11 @@ int main(int argc, char* argv[]) {
 			printf("average= %d min=%d max=%d\n",average,mini,maxi);
 			for(i=0;i<nelements;i++){
 				lint = (unsigned long)a[i]*(unsigned long)average;
-				c[i] = (unsigned short)(lint/(unsigned long)b[i]);
+				if ( b[i] != 0){
+					c[i] = (unsigned short)(lint/(unsigned long)b[i]);
+				} else {
+					c[i] = 65535;
+				}
 			}
 			remove(argv[3]);
 			if (write_fits(argv[3],c) == 0){
