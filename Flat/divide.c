@@ -82,6 +82,7 @@ int main(int argc, char* argv[]) {
 	unsigned short delta_flat;
 	unsigned short delta_light;
 	unsigned short average;
+	unsigned long factor;
 	
 	if (argc != 4){
 		printf("Usage: %s <raw> <flat> <result>\n",argv[0]);
@@ -109,18 +110,26 @@ int main(int argc, char* argv[]) {
 			printf("light: average= %d min=%d max=%d\n",average_light,mini_light,maxi_light);
 			delta_flat = maxi_flat - mini_flat;
 			delta_light = maxi_light - mini_light;
+			// algo 4
+			factor = 65535L*(unsigned long)mini_flat/(unsigned long)maxi_light;
+			lint_flat = (unsigned long)mini_light*factor/(unsigned long)maxi_flat;
+			printf("factor=%ld min=%ld",factor,lint_flat);
+			for(i=0;i<nelements;i++){
+				lint_flat = (unsigned long)a[i]*factor/(unsigned long)b[i];
+				c[i] = (unsigned short) lint_flat;
+			}
 			// algo 1
 			// 
 			// -> average_flat/flat_pixel * light_pixel
 			//
-			for(i=0;i<nelements;i++){
-				lint_flat = (unsigned long)a[i]*(unsigned long)average_flat;
-				if ( b[i] != 0){
-					c[i] = (unsigned short)(lint_flat/(unsigned long) b[i]);
-				} else {
-					c[i] = 65535;
-				}
-			}
+			//for(i=0;i<nelements;i++){
+				//lint_flat = (unsigned long)a[i]*(unsigned long)average_flat;
+				//if ( b[i] != 0){
+					//c[i] = (unsigned short)(lint_flat/(unsigned long) b[i]);
+				//} else {
+					//c[i] = 65535;
+				//}
+			//}
 			// algo 2
 			//
 			// 
