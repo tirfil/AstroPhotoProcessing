@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
 			// algo 4
 			factor = 65535L*(unsigned long)mini_flat/(unsigned long)maxi_light;
 			lint_flat = (unsigned long)mini_light*factor/(unsigned long)maxi_flat;
-			printf("factor=%ld min=%ld",factor,lint_flat);
+			printf("factor=%ld min=%ld\n",factor,lint_flat);
 			for(i=0;i<nelements;i++){
 				lint_flat = (unsigned long)a[i]*factor/(unsigned long)b[i];
 				c[i] = (unsigned short) lint_flat;
