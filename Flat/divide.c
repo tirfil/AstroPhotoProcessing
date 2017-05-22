@@ -71,9 +71,16 @@ int main(int argc, char* argv[]) {
 	long nelements;
 	int i;
 	int errors = 0;
-	unsigned long lint=0L;
-	unsigned short mini=65535;
-	unsigned short maxi=0;
+	unsigned long lint_flat=0L;
+	unsigned long lint_light=0L;
+	unsigned short mini_flat=65535;
+	unsigned short maxi_flat=0;
+	unsigned short mini_light=65535;
+	unsigned short maxi_light=0;
+	unsigned short average_flat;
+	unsigned short average_light;
+	unsigned short delta_flat;
+	unsigned short delta_light;
 	unsigned short average;
 	
 	if (argc != 4){
@@ -87,20 +94,53 @@ int main(int argc, char* argv[]) {
 			c = malloc(sizeof(unsigned short)*nelements);
 			// compute average value
 			for(i=0;i<nelements;i++){
-				lint += b[i];
-				if (b[i] > maxi) maxi=b[i];
-				if (b[i] < mini) mini=b[i];
+				lint_light += a[i];
+				if (a[i] > maxi_light) maxi_light=a[i];
+				if (a[i] < mini_light) mini_light=a[i];
 			}
-			average = (unsigned short)(lint/(unsigned long)nelements);
-			printf("average= %d min=%d max=%d\n",average,mini,maxi);
 			for(i=0;i<nelements;i++){
-				lint = (unsigned long)a[i]*(unsigned long)average;
+				lint_flat += b[i];
+				if (b[i] > maxi_flat) maxi_flat=b[i];
+				if (b[i] < mini_flat) mini_flat=b[i];
+			}
+			average_flat = (unsigned short)(lint_flat/(unsigned long)nelements);
+			average_light = (unsigned short)(lint_light/(unsigned long)nelements);
+			printf("flat : average= %d min=%d max=%d\n",average_flat,mini_flat,maxi_flat);
+			printf("light: average= %d min=%d max=%d\n",average_light,mini_light,maxi_light);
+			delta_flat = maxi_flat - mini_flat;
+			delta_light = maxi_light - mini_light;
+			// algo 1
+			// 
+			// -> average_flat/flat_pixel * light_pixel
+			//
+			for(i=0;i<nelements;i++){
+				lint_flat = (unsigned long)a[i]*(unsigned long)average_flat;
 				if ( b[i] != 0){
-					c[i] = (unsigned short)(lint/(unsigned long)b[i]);
+					c[i] = (unsigned short)(lint_flat/(unsigned long) b[i]);
 				} else {
 					c[i] = 65535;
 				}
 			}
+			// algo 2
+			//
+			// 
+			//average = maxi_flat/2 + mini_flat/2;
+			//for(i=0;i<nelements;i++){
+				//lint_flat = (unsigned long)a[i]*(unsigned long)average;
+				//if ( b[i] != 0){
+					//c[i] = (unsigned short)(lint_flat/(unsigned long) b[i]);
+				//} else {
+					//c[i] = 65535;
+				//}
+			//}
+			// algo 3
+			//
+			//
+			//for(i=0;i<nelements;i++){
+				//lint_flat = ((unsigned long)(maxi_flat - b[i]) * (unsigned long)(a[i] - mini_light));
+				//lint_flat = lint_flat /(unsigned long) delta_flat + (unsigned long)mini_light;
+				//c[i] = (unsigned short) lint_flat;
+			//}
 			remove(argv[3]);
 			if (write_fits(argv[3],c) == 0){
 				free(a); free(b); free(c);
