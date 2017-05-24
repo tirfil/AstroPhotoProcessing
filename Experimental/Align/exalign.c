@@ -10,6 +10,8 @@
 long width=0;
 long height=0;
 
+int xmin, xmax, ymin, ymax;
+
 unsigned short* a;
 unsigned short* b;
 
@@ -86,12 +88,12 @@ void check(int x0, int y0){
 	unsigned long sum = 0L;
 	int diff;
 	int x,y;
-	int xmin, xmax, ymin, ymax;
+	//int xmin, xmax, ymin, ymax;
 	// use image center to compute difference
-	xmin = width/3;
-	xmax = 2*width/3;
-	ymin = height/3;
-	ymax = 2*height/3;
+	//xmin = width/3;
+	//xmax = 2*width/3;
+	//ymin = height/3;
+	//ymax = 2*height/3;
 	for(x=xmin; x<xmax; x++)
 		for(y=ymin;y<ymax;y++){
 			// compute difference between image1 and image2 translated (in x and y axis)
@@ -127,12 +129,31 @@ int main(int argc, char* argv[]) {
 	pivot=1;
 	
 	
-	if (argc != 4){
-		printf("Usage: %s <image1> <image2> <result>\n",argv[0]);
+	if (argc != 8){
+		printf("Usage: %s <image1> <image2> <result> <xmin%> <xmax%> <ymin%> <ymax%>\n",argv[0]);
 		return -1;
 	}
 	
+	xmin = atoi(argv[4]);
+	xmax = atoi(argv[5]);
+	ymin = atoi(argv[6]);
+	ymax = atoi(argv[7]);
+	
 	if (read_fits(argv[1],&a) == 0){
+		//
+		xmin = (xmin * width)/100;
+		xmax = (xmax * width)/100;
+		ymin = (ymin * height)/100;
+		ymax = (ymax * height)/100;
+		
+		// add gap
+		if (xmin < 10) xmin=10;
+		if (xmax > (width-10)) xmax=width-10;
+		if (ymin < 10) ymin=10;
+		if (ymax > (height-10)) ymax=height-10;
+		
+		printf("x: %d-%d y: %d-%d\n",xmin,xmax,ymin,ymax);
+		//
 		if (read_fits(argv[2],&b) == 0){
 			// try to align both images using x and y translation (spiral move)
 			for(pivot=1; pivot<10; pivot++){
