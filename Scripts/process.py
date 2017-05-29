@@ -77,7 +77,7 @@ for root, dirs, files in os.walk(sourcedir):
 			reference = source
 			first = False
 		target = "step3" + os.sep + name
-		cmd = "./bin/align %s %s %s" % (source, reference, target)
+		cmd = "./bin/center %s %s %s 80" % (reference, source, target)
 		print cmd
 		os.system(cmd)
 		
