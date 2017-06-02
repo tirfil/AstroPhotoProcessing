@@ -95,14 +95,23 @@ for sourcedir in ["red","green","blue","luminance"]:
 				reference = source
 				first = False
 			target = dest + os.sep + name
-			cmd = "./bin/center %s %s %s 80" % (reference, source, target)
+			cmd = "./bin/center %s %s %s 50" % (reference, source, target)
 			print cmd
 			os.system(cmd)
 		
-for sourcedir in ["red","green","blue","luminance"]:
-	source = sourcedir + "_align"
-	target = "master" + sourcedir + ".fits"
+for color in ["red","green","blue","luminance"]:
+	source = color + "_align"
+	target = "m" + color + ".fits"
 	cmd = "./bin/median %s %s" % (source,target)
+	print cmd
+	os.system(cmd)
+	
+# align colors
+for color in ["red","green","blue"]:
+	reference = "mluminance.fits"
+	source = "m" + color + ".fits"
+	target = "master" + color + ".fits"
+	cmd = "./bin/center %s %s %s 50" % (reference, source, target)
 	print cmd
 	os.system(cmd)
 
