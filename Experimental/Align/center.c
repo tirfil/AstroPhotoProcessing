@@ -171,6 +171,9 @@ int main(int argc, char* argv[]) {
 									break;
 								}
 							}
+						}
+						if (aa[i]==1){
+							//printf("(%d,%d)\n",x,y);
 							n++;
 						}
 					}			
@@ -208,6 +211,9 @@ int main(int argc, char* argv[]) {
 									break;
 								}
 							}
+						}
+						if (bb[i]==1){
+							//printf("(%d,%d)\n",x,y);
 							n++;
 						}
 					}			
