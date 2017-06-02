@@ -358,7 +358,7 @@ int main(int argc, char* argv[]) {
 
 		   remove(argv[3]);
 		   if (write_fits(argv[3],c) == 0){
-				free(a); free(b); free(c);
+				free(a); free(b); free(c); free(aa); free(bb);
 				return 0;
 			}
 		   
@@ -366,7 +366,7 @@ int main(int argc, char* argv[]) {
 		   
 	}
 					
-	free(a); free(b); free(c);
+	free(a); free(b); free(c); free(aa); free(bb);
 	return -1;
 	
 }
