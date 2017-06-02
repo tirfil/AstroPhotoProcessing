@@ -151,16 +151,31 @@ int main(int argc, char* argv[]) {
 			thresholda = (unsigned short)(ul/100L)+mini;
 			printf("mini=%d - maxi=%d - threshold=%d\n",mini,maxi,thresholda);
 			// 
+			// detect stars
 			aa = malloc(sizeof(unsigned short)*nelements);
-			n = 0;
 			for (i=0;i<nelements;i++){
-				if ( a[i] > thresholda ){
-					aa[i] = 1;
-					n++;
-				} else {
-					aa[i] = 0;
-				}
+				aa[i] = 0;
 			}
+			n = 0;
+			for (y=1;y<height-1;y++)
+				for(x=1;x<width-1;x++){
+					i = y*width+x;
+					us = a[i];
+					if ( us > thresholda ){
+						aa[i] = 1;
+						for(y0=y-1;y0<=y+1;y0++){
+							for(x0=x-1;x0<=x+1;x0++){
+								if (a[y0*width+x0] > us)
+								{
+									aa[i] = 0;
+									break;
+								}
+							}
+							n++;
+						}
+					}			
+				}
+				
 			printf("detect %d/%ld\n",n,nelements);
 			// detect maxi/mini
 			mini = USHRT_MAX;
@@ -173,16 +188,30 @@ int main(int argc, char* argv[]) {
 			ul = (unsigned long)(maxi-mini)*(unsigned long)factor;
 			thresholdb = (unsigned short)(ul/100L)+mini;
 			printf("mini=%d - maxi=%d - threshold=%d\n",mini,maxi,thresholdb);	
+			// detect stars
 			bb = malloc(sizeof(unsigned short)*nelements);
-			n = 0;
 			for (i=0;i<nelements;i++){
-				if ( b[i] > thresholdb ){
-					bb[i] = 1;
-					n++;
-				} else {
-					bb[i] = 0;
-				}
+				bb[i] = 0;
 			}
+			n = 0;
+			for (y=1;y<height-1;y++)
+				for(x=1;x<width-1;x++){
+					i = y*width+x;
+					us = b[i];
+					if ( us > thresholdb ){
+						bb[i] = 1;
+						for(y0=y-1;y0<=y+1;y0++){
+							for(x0=x-1;x0<=x+1;x0++){
+								if (b[y0*width+x0] > us)
+								{
+									bb[i] = 0;
+									break;
+								}
+							}
+							n++;
+						}
+					}			
+				}
 			printf("detect %d/%ld\n",n,nelements);	
 			
 			pivota[0].x = 0;
