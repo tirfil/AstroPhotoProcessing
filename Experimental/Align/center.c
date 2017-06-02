@@ -214,6 +214,7 @@ int main(int argc, char* argv[]) {
 				}
 			printf("detect %d/%ld\n",n,nelements);	
 			
+// 			
 			pivota[0].x = 0;
 			pivota[0].y = 0;
 			pivota[1].x = 0;
@@ -245,10 +246,10 @@ int main(int argc, char* argv[]) {
 									distmini = distance;
 									n = i;
 								}
-								pivota[n].n++;
-								pivota[n].dx += x - pivota[n].x;
-								pivota[n].dy += y - pivota[n].y;
 							}
+							pivota[n].n += 1;
+							pivota[n].dx += x - pivota[n].x;
+							pivota[n].dy += y - pivota[n].y;
 						}	
 					}
 				}
@@ -293,10 +294,10 @@ int main(int argc, char* argv[]) {
 									distmini = distance;
 									n = i;
 								}
-								pivotb[n].n++;
-								pivotb[n].dx += x - pivotb[n].x;
-								pivotb[n].dy += y - pivotb[n].y;
 							}
+							pivotb[n].n++;
+							pivotb[n].dx += x - pivotb[n].x;
+							pivotb[n].dy += y - pivotb[n].y;
 						}	
 					}
 				}
