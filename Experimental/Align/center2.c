@@ -142,19 +142,17 @@ int main(int argc, char* argv[]) {
 	
 	unsigned short mini;
 	unsigned short maxi;
-	int i,j;
+	int i,j,k,l;
 	int n;
 	int na, nb;
 	unsigned short us;
+	int va,vb,vc,size,index;
 	
 	Tpivot pivota[4];
 	Tpivot pivotb[4];
 	
 	Px* pxa;
 	Px* pxb; 
-	
-	Px* pxa3;
-	Px* pxb3;
 	
 	int* a2;
 	int* b2;
@@ -168,6 +166,18 @@ int main(int argc, char* argv[]) {
 	int x1, y1;
 	
 	int upper;
+	
+	int lista[10];
+	int listb[10];
+	
+	int pointa[20];
+	int pointb[20];
+	
+	int point[20];
+	
+	int la,lb;
+	
+	int go;
 	
 	x=0;
 	y=0;
@@ -320,8 +330,85 @@ int main(int argc, char* argv[]) {
 				
 				
 			//
-			pxa3 = malloc(sizeof(Px)*3);
-			pxb3 = malloc(sizeof(Px)*3);
+			upper = INT_MAX;
+			go = 1;
+			i = 0;
+			while ( go ) {
+				la = get_max(a2,na*na,&upper);
+				if (la) {
+					lb = get_index(b2,nb*nb,upper);
+					if (lb) {
+						lista[i] = la;
+						listb[i++] = lb;
+						if (i==10) go=0;
+					}
+				} else {
+					go = 0;
+				}
+			}
+			
+			size = i;
+			
+			for(j=0;j<size;j++){
+				la = lista[j];
+				pointa[2*j  ]=la%na;
+				pointa[2*j+1]=la/na;
+				lb = listb[j];
+				pointb[2*j  ]=lb%nb;
+				pointb[2*j+1]=lb/nb;
+			}
+			
+			// triangle
+			index=0;
+			for(j=0;j<(2*size+1);j++){
+				la = pointa[j];
+				n = 0;
+				for(k=j+1;k<(2*size+1);k++){
+					lb = pointa[k];
+					if (la==lb) n++;
+					if (n==2){
+						point[index++]=la;
+						break;
+					}
+				}
+			}
+			
+			vb = -1;
+			vc = -1;
+			for(i=0;i<index;i++)
+				va = point[i];
+				for(j=0;j<(2*size+1);j++)
+					if (pointa[j] == va){
+						if (j%2)
+							n=j+1;
+						else 
+							n=j-1;
+						n = pointa[n];
+						for(k=0;k<index;k++)
+							if (point[k]==n){
+								vb = point[k];
+								break;
+							}
+						if (vb<0) break;
+						for(k=0;k<(2*size+1);k++)
+							if (pointa[k] == vb){
+								if (k%2)
+									n=k+1;
+								else
+									n=k-1;
+								n = pointa[n];
+								if(n==va) continue;
+								for(l=0;l<index;l++)
+									if (point[l]==n){
+										vc = point[l];
+										break;
+									}
+								if (vc<0) break;
+							}
+					}
+									
+						
+			
 			
 			i = 0;
 			upper = INT_MAX;			
