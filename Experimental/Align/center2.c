@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include "fitsio.h"
 #include <limits.h>
+#include <math.h>
 
 long width=0;
 long height=0;
@@ -148,11 +149,10 @@ int main(int argc, char* argv[]) {
 	unsigned short us;
 	int va,vb,vc,size,index;
 	
-	Tpivot pivota[4];
-	Tpivot pivotb[4];
 	
 	Px* pxa;
 	Px* pxb; 
+	Px* pxl;
 	
 	int* a2;
 	int* b2;
@@ -186,6 +186,8 @@ int main(int argc, char* argv[]) {
 	
 	xmini = 0;
 	ymini = 0;
+	
+	unsigned int* score;
 	
 	
 	if (argc != 5){
@@ -361,7 +363,9 @@ int main(int argc, char* argv[]) {
 				pointb[2*j+1]=lb/nb;
 			}
 			
-			for(j=0;j<1;j++){
+			pxl = malloc(sizeof(Px)*size);
+			
+			for(j=0;j<size;j++){
 				x0 = pointa[2*j];
 				x1 = pointa[2*j+1];
 				y0 = pointb[2*j];
@@ -372,241 +376,34 @@ int main(int argc, char* argv[]) {
 				printf("b (%d,%d) - (%d,%d)\n",pxb[y0].x,pxb[y0].y,pxb[y1].x,pxb[y1].y);
 				y = (pxa[x0].y+pxa[x1].y) - (pxb[y0].y+pxb[y1].y);
 				y = y/2;
+				pxl[j].x = x;
+				pxl[j].y = y;
 				printf("dx=%d , dy=%d\n",x,y);
 			}
 			
-			xmini = -x;
-			ymini = -y;
+			score = malloc(sizeof(unsigned int)*size);
 			
-			//// triangle
-			//index=0;
-			//for(j=0;j<(2*size+1);j++){
-				//la = pointa[j];
-				//n = 0;
-				//for(k=j+1;k<(2*size+1);k++){
-					//lb = pointa[k];
-					//if (la==lb) n++;
-					//if (n==2){
-						//point[index++]=la;
-						//break;
-					//}
-				//}
-			//}
+			for (i=0;i<size;i++){
+				score[i] = 0;
+				for(j=i;j<size;j++)
+					if ((pxl[i].x == pxl[j].x) && (pxl[i].y == pxl[j].y))
+						score[i]++;
+			}
 			
-			//vb = -1;
-			//vc = -1;
-			//for(i=0;i<index;i++)
-				//va = point[i];
-				//for(j=0;j<(2*size+1);j++)
-					//if (pointa[j] == va){
-						//if (j%2)
-							//n=j+1;
-						//else 
-							//n=j-1;
-						//n = pointa[n];
-						//for(k=0;k<index;k++)
-							//if (point[k]==n){
-								//vb = point[k];
-								//break;
-							//}
-						//if (vb<0) break;
-						//for(k=0;k<(2*size+1);k++)
-							//if (pointa[k] == vb){
-								//if (k%2)
-									//n=k+1;
-								//else
-									//n=k-1;
-								//n = pointa[n];
-								//if(n==va) continue;
-								//for(l=0;l<index;l++)
-									//if (point[l]==n){
-										//vc = point[l];
-										//break;
-									//}
-								//if (vc<0) break;
-							//}
-					//}
-									
-						
+			maxi = 0;
+			for (i=0;i<size;i++)
+				if (score[i] > maxi){
+					maxi = score[i];
+					index = i;
+				}
+				
+			printf("max score= %d\n",maxi);
 			
+			xmini = -pxl[index].x;
+			ymini = -pxl[index].y;
 			
-			//i = 0;
-			//upper = INT_MAX;			
-			//if (na < nb){
-				//while (i<3) {
-					//x = get_max(a2,na*na,&upper);
-					//if (x){
-						//y = get_index(b2,nb*nb,upper);
-						//if (y) {
-							//i++;
-							//x0 = x%na;
-							//y0 = x/na;
-							//printf("\na (%d,%d) - (%d,%d)\n",pxa[x0].x,pxa[x0].y,pxa[y0].x,pxa[y0].y);
-							//x1 = y%nb;
-							//y1 = y/nb;
-							//printf("b (%d,%d) - (%d,%d)\n",pxb[x1].x,pxb[x1].y,pxb[y1].x,pxb[y1].y);
-							////
-							//x = pxa[x0].x-pxb[x1].x;
-							//y = pxa[y0].x-pxb[y1].x;
-							//printf("%d // %d\n",x,y);
-							//if ((x-y)*(x-y)<=1) printf("||\n");
-							//x = pxa[x0].x-pxb[y1].x;
-							//y = pxa[y0].x-pxb[x1].x;
-							//printf("%d // %d\n",x,y);
-							//if ((x-y)*(x-y)<=1) printf("X\n");
-						//}
-					//} else {
-						//break;
-					//}
-				//}
-			//} else {
-				//while (i<3) {
-					//x = get_max(b2,nb*nb,&upper);
-					//if (x){
-						//y = get_index(a2,na*na,upper);
-						//if (y) {
-							//i++;
-							//x0 = x%nb;
-							//y0 = x/nb;
-							//printf("\nb (%d,%d) - (%d,%d)\n",pxb[x0].x,pxb[x0].y,pxb[y0].x,pxb[y0].y);
-							//x1 = y%na;
-							//y1 = y/na;
-							//printf("a (%d,%d) - (%d,%d)\n",pxa[x1].x,pxa[x1].y,pxa[y1].x,pxa[y1].y);
-							////
-							//x = pxb[x0].x-pxa[x1].x;
-							//y = pxb[y0].x-pxa[y1].x;
-							//printf("%d // %d\n",x,y);
-							//if ((x-y)*(x-y)<=1) printf("||\n");
-							//x = pxb[x0].x-pxa[y1].x;
-							//y = pxb[y0].x-pxa[x1].x;
-							//printf("%d // %d\n",x,y);
-							//if ((x-y)*(x-y)<=1) printf("X\n");
-						//}
-					//} else {
-						//break;
-					//}
-				//}				
-			//}	
-// 			
-			//pivota[0].x = 0;
-			//pivota[0].y = 0;
-			//pivota[1].x = 0;
-			//pivota[1].y = height;	
-			//pivota[2].x = width;
-			//pivota[2].y = 0;					
-			//pivota[3].x = width;
-			//pivota[3].y = height;
-			//// iterate
-			//for(iter=0; iter<10; iter++){
-				////printf("iteration #%d\n",iter);
-				//// init
-				//for (i=0; i<4; i++){
-					//pivota[i].n = 0;
-					//pivota[i].dx = 0;
-					//pivota[i].dy = 0;
-				//}
-				//for(x=0; x<width; x++){
-					//for(y=0;y<height;y++){
-						//if (aa[y*width+x] == 1){
-							//distmini = width*width + height*height;
-							//distmini = (int)sqrt((double)distmini);
-							//for (i=0; i<4; i++){
-								//dx = x - pivota[i].x;
-								//dy = y - pivota[i].y;
-								//distance = dx*dx + dy*dy;
-								//distance = (int)sqrt((double)distance);
-								//if ( distance < distmini){
-									//distmini = distance;
-									//n = i;
-								//}
-							//}
-							//pivota[n].n += 1;
-							//pivota[n].dx += x - pivota[n].x;
-							//pivota[n].dy += y - pivota[n].y;
-						//}	
-					//}
-				//}
-				//for (i=0; i<4; i++){
-					//n = pivota[i].n;
-					//if (n != 0) {
-						//pivota[i].x += pivota[i].dx/n;
-						//pivota[i].y += pivota[i].dy/n;
-						////printf("%d: #%d x=%d y=%d dx=%d dy=%d\n",i,n,pivota[i].x,pivota[i].y,pivota[i].dx/n,pivota[i].dy/n);
-					//}
-				//}
-			//}
-
-			//pivotb[0].x = 0;
-			//pivotb[0].y = 0;
-			//pivotb[1].x = 0;
-			//pivotb[1].y = height;	
-			//pivotb[2].x = width;
-			//pivotb[2].y = 0;					
-			//pivotb[3].x = width;
-			//pivotb[3].y = height;
-			//// iterate
-			//for(iter=0; iter<10; iter++){
-				////printf("iteration #%d\n",iter);
-				//// init
-				//for (i=0; i<4; i++){
-					//pivotb[i].n = 0;
-					//pivotb[i].dx = 0;
-					//pivotb[i].dy = 0;
-				//}
-				//for(x=0; x<width; x++){
-					//for(y=0;y<height;y++){
-						//if (bb[y*width+x] == 1){
-							//distmini = width*width + height*height;
-							//distmini = (int)sqrt((double)distmini);
-							//for (i=0; i<4; i++){
-								//dx = x - pivotb[i].x;
-								//dy = y - pivotb[i].y;
-								//distance = dx*dx + dy*dy;
-								//distance = (int)sqrt((double)distance);
-								//if ( distance < distmini){
-									//distmini = distance;
-									//n = i;
-								//}
-							//}
-							//pivotb[n].n++;
-							//pivotb[n].dx += x - pivotb[n].x;
-							//pivotb[n].dy += y - pivotb[n].y;
-						//}	
-					//}
-				//}
-				//for (i=0; i<4; i++){
-					//n = pivotb[i].n;
-					//if (n != 0) {
-						//pivotb[i].x += pivotb[i].dx/n;
-						//pivotb[i].y += pivotb[i].dy/n;
-						////printf("%d: #%d x=%d y=%d dx=%d dy=%d\n",i,n,pivotb[i].x,pivotb[i].y,pivotb[i].dx/n,pivotb[i].dy/n);
-					//}
-					
-				//}
-			//}
-			
-			//maxi = 0;
-			//for (i=0; i<4; i++){
-				//n = pivota[i].n;
-				//if (n) printf("%d: #%d x=%d y=%d dx=%d dy=%d\n",i,n,pivota[i].x,pivota[i].y,pivota[i].dx/n,pivota[i].dy/n);
-				//if ( n > maxi){
-					//maxi = n;
-					//na = i;
-				//}
-			//}
-			
-			//maxi = 0;
-			//for (i=0; i<4; i++){
-				//n = pivotb[i].n;
-				//if (n) printf("%d: #%d x=%d y=%d dx=%d dy=%d\n",i,n,pivotb[i].x,pivotb[i].y,pivotb[i].dx/n,pivotb[i].dy/n);
-				//if ( n > maxi){
-					//maxi = n;
-					//nb = i;
-				//}
-			//}
-			
-			//xmini = pivotb[nb].x - pivota[na].x;
-			//ymini = pivotb[nb].y - pivota[na].y;
+			free(pxl);
+			free(score);
 			
 			printf("translate: x:%d y:%d\n",xmini,ymini);
 	   
