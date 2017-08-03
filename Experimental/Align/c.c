@@ -1,4 +1,6 @@
 #include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "fitsio.h"
 #include <limits.h>
 #include <math.h>
@@ -17,6 +19,12 @@ typedef struct {
 	unsigned int y1;
 	unsigned int value;
 } Distance;
+
+typedef struct {
+	int x;
+	int y;
+	unsigned short value;
+} Item;
 
 struct ushort_node {
 	unsigned short 		value;
@@ -93,6 +101,36 @@ int write_fits(char* path,unsigned short* image)
 	fits_create_img(fptrout, USHORT_IMG, naxis, naxes, &status);
 	fits_write_img(fptrout, TUSHORT, 1, nelements, image, &status);
 	fits_close_file(fptrout, &status);
+}
+
+unsigned int get_rand(bool init,unsigned int max, unsigned int* value)
+{
+	static unsigned int* table;
+	static unsigned int size;
+	int i;
+	unsigned int index;
+	if (init == true){
+		size = max;
+		table = malloc(sizeof(unsigned int)*max);
+		if (table != NULL)
+		{
+			for(i=0;i<max;i++)
+				table[i] = i;
+		} else {
+			printf("Memory error\n");
+		}
+		*value = 0;
+		return size;
+	}
+	if (max == 0){
+		free(table);
+		return 0;
+	}
+	index = rand() % size;
+	*value = table[index];
+	table[index] = table[size-1];
+	size--;
+	return size;
 }
 
 unsigned short* medianfilter(unsigned short* image,unsigned int width, unsigned int height)
@@ -197,8 +235,8 @@ int stat(unsigned short* image,unsigned int size, unsigned short* average, unsig
 		sum  += (unsigned long) tmp;
 		sum2 += (unsigned long) tmp * (unsigned long) tmp;
 	}
+	
 	*average = (unsigned short)(sum / (unsigned long) size);
-	printf("sum2=%ld\n",sum2);
 	variance = (sum2 / (unsigned long)size) - ((unsigned long)*average * (unsigned long)*average);
 	*stddev = (unsigned short)sqrt((double)variance);
 
@@ -261,7 +299,7 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 }
 
 /* 
- * Select more bright stars
+ * Select brighter stars
 */
 Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int height, unsigned int number)
 {
@@ -271,12 +309,14 @@ Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int heig
 	int i,j,n;
 	unsigned int x,y;
 	unsigned int nelements;
+	unsigned int xx,yy;
 
 	Pixel* pix;
 	bool cont;
 	
 	printf("select_stars\n");
 	nelements = width*height;
+	pix = malloc(sizeof(Pixel)*number);
 	upper = USHRT_MAX;	
 	cont = true;
 	n = 0;
@@ -291,14 +331,20 @@ Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int heig
 			} 
 		}
 		// pass 2
-		pix = malloc(sizeof(Pixel)*number);
-		for(i=0;i<nelements;i++){
+		//get_rand(true,nelements,&i); // init
+		//while(get_rand(false,nelements,&i)>0){
+		i = 0;
+		for(j=0;j<nelements;j++){
+			i = (i + 1013)%nelements;  // 1013 prime
+			xx =  i % width;
+			yy =  i / width;
+			if (xx == 0 || yy == 0 || xx == width-1 || yy == height-1 ) continue;
 			tmp = stars[i];
 			if (tmp == maxi){
-				pix[n].x = i % width;
-				pix[n].y = i / width;
+				pix[n].x = xx;
+				pix[n].y = yy;
 				pix[n].value = tmp;
-				//printf("%d: (%d,%d) - %d\n",n,pix[n].x,pix[n].y,pix[n].value);
+				printf("%d: (%d,%d) - %d\n",n,pix[n].x,pix[n].y,pix[n].value);
 				n++;
 				if (n == number){
 					cont = false;
@@ -306,10 +352,12 @@ Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int heig
 				}
 			}
 		}
+		//get_rand(false,0,&i); // free
 		if (cont == false) break;
 		if (upper > 0) upper = maxi - 1;
 	}
-	
+	//for(i=0;i<number;i++)
+		//printf("(%d,%d)\n",pix[i].x,pix[i].y);
 	return pix;
 }
 
@@ -320,27 +368,30 @@ Distance* compute_distance(Pixel* pix,unsigned int number)
 {
 	int i,j;
 	int dx,dy;
-	unsigned int d;
+	int d;
 	int size;
 	Distance* distance;
 	int n;
 	
 	printf("compute_distance\n");
 	
-	size = (number-1)*number/2;
+	size = ((number-1)*number)/2;
 
 	distance = malloc(sizeof(Distance)*size);
+	
+	//for(i=0;i<number;i++)
+		//printf("(%d,%d)\n",pix[i].x,pix[i].y);
 	
 	n = 0;
 	for(j=0;j<number;j++)
 		for(i=j;i<number;i++){
 			if (i != j){
-				dx = pix[i].x - pix[j].x;
-				dy = pix[i].y - pix[j].y;
+				dx = (int)pix[i].x - (int)pix[j].x;
+				dy = (int)pix[i].y - (int)pix[j].y;
 				d=dx*dx+dy*dy;
 				d = (int)sqrt((double)d);
-				distance[n].value = d;
-				//printf("distance= %d (%d,%d)-(%d,%d)\n",d,pix[i].x,pix[i].y,pix[j].x,pix[j].y);
+				distance[n].value = (unsigned int)d;
+				//printf("distance= %d (%d,%d)-(%d,%d) ;",d,pix[i].x,pix[i].y,pix[j].x,pix[j].y);
 				distance[n].x0 = pix[i].x;
 				distance[n].x1 = pix[j].x;
 				distance[n].y0 = pix[i].y;
@@ -348,6 +399,12 @@ Distance* compute_distance(Pixel* pix,unsigned int number)
 				n++;
 			}
 		}
+	/*
+	for(i=0;i<size-1;i++){
+		printf("%d ",distance[i].value);
+	}
+	printf("\n");
+	*/	
 	return distance;
 }
 /*
@@ -362,7 +419,7 @@ void sort_distance(Distance* distance, unsigned int side)
 	bool change;
 	
 	printf("sort_distance\n");
-	size = (side-1)*side/2;
+	size = ((side-1)*side)/2;
 	
 	change = true;
 	while(change)
@@ -378,7 +435,7 @@ void sort_distance(Distance* distance, unsigned int side)
 				tmp.y0 = distance[i].y0;
 				tmp.x1 = distance[i].x1;
 				tmp.y1 = distance[i].y1;
-				distance[i].value = distance[i].value;
+				distance[i].value = distance[i+1].value;
 				distance[i].x0 = distance[i+1].x0;
 				distance[i].y0 = distance[i+1].y0;
 				distance[i].x1 = distance[i+1].x1;
@@ -392,7 +449,10 @@ void sort_distance(Distance* distance, unsigned int side)
 			}
 		}
 	}
-	
+	//for(i=0;i<size-1;i++){
+		//printf("%d ",distance[i].value);
+	//}
+	//printf("\n");
 }
 /*
  * Compute translation x & y
@@ -403,24 +463,48 @@ void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, 
 	int i,j;
 	int delta;
 	int x0,x1,y0,y1;
+	int i0,i1;
+	unsigned int value0,value1;
 	
 	printf("compute_translate\n");
 	
-	size = (side-1)*side/2;
-	for(i=0;i<size;i++)
-		for(j=0;j<size;j++){
-			delta = abs(d0[i].value - d1[j].value);
-			if (delta < 2 && d0[i].value > 10){
+	size = ((side-1)*side)/2;
+	
+	i0 = 0;
+	i1 = 0;
+	value0=d0[0].value;
+	value1=d1[0].value;
+	
+	if (value0 > value1){
+		while(value0 > value1){
+			value0=d0[++i0].value;
+		}
+	} else {
+		while(value0 < value1){
+			value1=d1[++i1].value;
+		}
+	}
+	
+	
+	for(i=i0;i<size;i++){
+		//printf("d0: %d\n",d0[i].value);
+		for(j=i1;j<size;j++){
+			//printf("d1: %d\n",d1[j].value);
+			delta = abs((int)d0[i].value - (int)d1[j].value);
+			if (d0[i].value < 500 || d1[j].value < 500)
+				continue;
+			if (delta < 2){
 				// middle segment
 				x0 = (d0[i].x0 + d0[i].x1)/2;
 				y0 = (d0[i].y0 + d0[i].y1)/2;
 				x1 = (d1[j].x0 + d1[j].x1)/2;
 				y1 = (d1[j].y0 + d1[j].y1)/2;
-				printf("translate: %d (%d,%d)\n",d0[i].value,x1-x0,y1-y0);
+				printf("translation: %d (%d,%d)\n",d0[i].value,x1-x0,y1-y0);
 				*x = x1-x0;
 				*y = y1-y0;
 			}
-		}	
+		}
+	}	
 }
 
 int main(int argc, char* argv[]) {
