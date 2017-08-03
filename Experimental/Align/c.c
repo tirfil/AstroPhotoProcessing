@@ -18,6 +18,14 @@ typedef struct {
 	unsigned int value;
 } Distance;
 
+struct ushort_node {
+	unsigned short 		value;
+	struct ushort_node 	*next;
+};
+
+typedef struct ushort_node ushort_node;
+
+
 int width=0;
 int height=0;
 
@@ -87,6 +95,80 @@ int write_fits(char* path,unsigned short* image)
 	fits_close_file(fptrout, &status);
 }
 
+unsigned short* medianfilter(unsigned short* image,unsigned int width, unsigned int height)
+{
+	unsigned int nelements;
+	unsigned short* im;
+	int x,y;
+	ushort_node* root;
+	ushort_node* item;
+	ushort_node* tmp;
+	ushort_node* tmp2;
+	int xx,yy;
+	bool stop;
+	int i;
+	
+	nelements = width * height;
+	
+	im = malloc(sizeof(unsigned short)*nelements);
+	
+	for(y=0;y< height;y++)
+		for(x=0;x < width;x++){
+			root = NULL;
+			// 3x3 matrix
+			for(yy=y-1;yy<=y+1;yy++)
+				for(xx=x-1;xx<=x+1;xx++)
+				{
+					item = malloc(sizeof(ushort_node));
+					if (xx >=0 && yy >=0 && xx < width && yy < height)
+						item->value = image[xx+yy*width];
+					else
+						item->value = image[x+y*width];
+					item->next = NULL;
+					// insert and sort
+					if (root == NULL){
+						root=item;
+					} else {
+						tmp = root;
+						tmp2 = NULL;
+						stop = false;
+						do {
+							if (item->value >= tmp->value){
+								if (tmp->next != NULL){
+									// next
+									tmp2 = tmp;
+									tmp = tmp->next;
+								} else {
+									// append at end
+									tmp->next = item;
+									stop = 1;
+								}
+							} else {
+								// insert
+								item->next = tmp;
+								if (tmp2 == NULL){
+									// at start
+									root = item;
+								} else {
+									tmp2->next = item;
+								}
+								stop = true;
+							}
+						} while (stop == false);	
+					}			
+				}
+			tmp = root;
+			for(i=0;i<9;i++){
+				if (i == 4) im[x+y*width] = tmp->value;
+				tmp2 = tmp;
+				tmp = tmp->next;
+				// free ushort_node struct
+				free(tmp2);
+			}
+		}
+	return im;	
+}
+
 int minmax(unsigned short* image,unsigned int size, unsigned short* mini, unsigned short* maxi)
 {
 	int i;
@@ -100,11 +182,36 @@ int minmax(unsigned short* image,unsigned int size, unsigned short* mini, unsign
 	}
 } 
 
+int stat(unsigned short* image,unsigned int size, unsigned short* average, unsigned short* stddev)
+{
+	int i;
+	unsigned short tmp;
+	unsigned long sum, sum2;
+	unsigned long variance;
+	
+	sum = 0L;
+	sum2 = 0L;
+	
+	for (i=0; i<size; i++){
+		tmp = image[i];
+		sum  += (unsigned long) tmp;
+		sum2 += (unsigned long) tmp * (unsigned long) tmp;
+	}
+	*average = (unsigned short)(sum / (unsigned long) size);
+	printf("sum2=%ld\n",sum2);
+	variance = (sum2 / (unsigned long)size) - ((unsigned long)*average * (unsigned long)*average);
+	*stddev = (unsigned short)sqrt((double)variance);
+
+	printf("average = %d\n",*average);
+	printf("standard deviation = %d\n",*stddev);
+	
+}
+
 /* 
  * Detect star objects. A star is a pixel surounded by less bright pixels.
  *
 */ 
-unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned int height)
+unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned int height, unsigned short threshold)
 {
 	int x,y;
 	int pos;
@@ -122,11 +229,15 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 		for(x=1;x<width-1;x++){
 			pos = y*width+x;
 			value = image[pos];
+			if (value < threshold){
+				stars[pos]=0;
+				continue;
+			}
 			//printf("%d\n",value);
 			top = true;
 			for(y0=y-1;y0<=y+1;y0++){
 				for(x0=x-1;x0<=x+1;x0++){
-					if (image[y0*width+x0] >= value)
+					if (image[y0*width+x0] > value)
 					{
 						if ((x0 != x) || (y0 != y))
 						{
@@ -140,7 +251,7 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 			}
 			if (top == true)
 			{
-				printf("Add (%d,%d) - %d\n",x,y,value);
+				//printf("Add (%d,%d) - %d\n",x,y,value);
 				stars[pos] = value;
 			} else {
 				stars[pos] = 0;
@@ -165,16 +276,16 @@ Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int heig
 	bool cont;
 	
 	printf("select_stars\n");
-	maxi = 0;
 	nelements = width*height;
 	upper = USHRT_MAX;	
 	cont = true;
 	n = 0;
 	while(cont){
 		// pass 1
+		maxi = 0;
 		for(i=0;i<nelements;i++){
 			tmp = stars[i];
-			if (( tmp > maxi ) && ( maxi <= upper ))
+			if (( tmp > maxi ) && ( tmp <= upper ))
 			{
 				maxi = tmp;
 			} 
@@ -187,10 +298,11 @@ Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int heig
 				pix[n].x = i % width;
 				pix[n].y = i / width;
 				pix[n].value = tmp;
-				//printf("(%d,%d) - %d\n",pix[n].x,pix[n].y,pix[n].value);
+				//printf("%d: (%d,%d) - %d\n",n,pix[n].x,pix[n].y,pix[n].value);
 				n++;
 				if (n == number){
 					cont = false;
+					break;
 				}
 			}
 		}
@@ -298,13 +410,13 @@ void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, 
 	for(i=0;i<size;i++)
 		for(j=0;j<size;j++){
 			delta = abs(d0[i].value - d1[j].value);
-			if (delta < 2){
+			if (delta < 2 && d0[i].value > 10){
 				// middle segment
 				x0 = (d0[i].x0 + d0[i].x1)/2;
 				y0 = (d0[i].y0 + d0[i].y1)/2;
 				x1 = (d1[j].x0 + d1[j].x1)/2;
 				y1 = (d1[j].y0 + d1[j].y1)/2;
-				//printf("translate: %d (%d,%d)\n",d0[i].value,x1-x0,y1-y0);
+				printf("translate: %d (%d,%d)\n",d0[i].value,x1-x0,y1-y0);
 				*x = x1-x0;
 				*y = y1-y0;
 			}
@@ -315,27 +427,35 @@ int main(int argc, char* argv[]) {
 	
 		unsigned short* a;
 		unsigned short* b;
+		unsigned short* m;
 		unsigned short* stars;
 		Pixel* pixels;
 		Distance* dista;
 		Distance* distb;
 		int x;
 		int y;
+		unsigned short average;
+		unsigned short stddev;
 	
 		if (read_fits(argv[1],&a) == 0){
 			if (read_fits(argv[2],&b) == 0){
-				stars = detect_stars(a,width,height);
+				m = medianfilter(a,width,height);
+				stat(a,width*height,&average,&stddev);
+				stars = detect_stars(m,width,height,average+stddev);
 				pixels = select_stars(stars,width,height,20);
 				dista = compute_distance(pixels,20);
 				sort_distance(dista,20);
-				free(stars); free(pixels);
-				stars = detect_stars(b,width,height);
+				free(m);free(stars); free(pixels);
+				m = medianfilter(b,width,height);
+				stat(b,width*height,&average,&stddev);
+				stars = detect_stars(m,width,height,average+stddev);
 				pixels = select_stars(stars,width,height,20);
 				distb = compute_distance(pixels,20);
 				sort_distance(distb,20);
-				free(stars); free(pixels);
+				free(m);free(stars); free(pixels);
 				compute_translation(dista,distb,20,&x,&y);
 				free(dista); free(distb);
+				free(a);free(b);
 			}
 		}
 }
