@@ -254,6 +254,68 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 	int x,y;
 	int pos;
 	unsigned short value;
+	int counter;
+	int x0,y0;
+	int precision;
+	
+	precision = 10;
+	
+	unsigned short* stars;
+	
+	printf("detect_stars\n");
+	
+	stars = malloc(sizeof(unsigned short)*(width*height));
+	
+	//pass1
+	for (y=1;y<height-1;y++){
+		counter = 0;
+		for(x=1;x<width-1;x++){
+			pos = y*width+x;
+			value = image[pos];
+			stars[pos]=0;
+			if (value < threshold){
+				if (counter >= precision)
+				{
+					//printf("len: %d\n",counter);
+					counter = counter/2;
+					stars[y0*width+x0+counter/2] = counter;
+				}
+				counter = 0;
+			} else {
+				if (counter == 0)
+				{
+					x0 = x;
+					y0 = y;
+				}
+				counter += 1;
+			}
+		}
+	}
+	// pass2 (filtering)
+	for (y=1;y<height-1;y++)
+		for(x=1;x<width-1;x++){
+			pos = y*width+x;
+			value = stars[pos];
+			if (value == 0) continue;
+			for(y0=y-1;y0<=y+1;y0++){
+				for(x0=x-1;x0<=x+1;x0++){
+					if (stars[y0*width+x0] > value)
+						if ((x0 != x) || (y0 != y)){
+							stars[pos]=0;
+						}
+				}
+			}
+		}
+	
+	return stars;
+}
+
+/*
+unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned int height, unsigned short threshold)
+{
+	int x,y;
+	int pos;
+	unsigned short value;
 	int x0,y0;
 	bool top;
 	
@@ -275,7 +337,7 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 			top = true;
 			for(y0=y-1;y0<=y+1;y0++){
 				for(x0=x-1;x0<=x+1;x0++){
-					if (image[y0*width+x0] > value)
+					if (image[y0*width+x0] >= value)
 					{
 						if ((x0 != x) || (y0 != y))
 						{
@@ -297,6 +359,7 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 		}
 	return stars;
 }
+*/
 
 /* 
  * Select brighter stars
@@ -449,14 +512,97 @@ void sort_distance(Distance* distance, unsigned int side)
 			}
 		}
 	}
-	//for(i=0;i<size-1;i++){
-		//printf("%d ",distance[i].value);
-	//}
-	//printf("\n");
+	for(i=0;i<size-1;i++){
+		printf("%d ",distance[i].value);
+	}
+	printf("\n");
 }
 /*
  * Compute translation x & y
  */
+void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, int* y)
+{
+	int size;
+
+	int i;
+	unsigned int value0,value1;
+	int i0,i1;
+	int delta;
+	unsigned int x00,y00,x01,y01,x10,y10,x11,y11;
+	
+	size = ((side-1)*side)/2;
+	i0 = 0;
+	i1 = 0;
+	value0=d0[0].value;
+	value1=d1[0].value;
+	
+	while((i0 < size-1) && (i1 < size-1)){
+		if (value0 > value1){
+			while(value0 > value1){
+				value0=d0[++i0].value;
+			}
+			delta = abs((int)value0 - (int)value1);
+			if (delta < 2){
+				x00 = d0[i0].x0;
+				y00 = d0[i0].y0;
+				x01 = d0[i0].x1;
+				y01 = d0[i0].y1;
+
+				x10 = d1[i1].x0;
+				y10 = d1[i1].y0;
+				x11 = d1[i1].x1;
+				y11 = d1[i1].y1;	
+				printf("%d (%d,%d)-(%d,%d) %d (%d,%d)-(%d,%d)\n",value0,x00,y00,x01,y01,value1,x10,y10,x11,y11);
+				printf("pt1(%d,%d) pt2(%d,%d)\n",x00-x10,y00-y10,x01-x11,y01-y11);	
+				
+				i1++;		
+			} else {
+				value1=d1[++i1].value;
+			}
+		} else {
+			while(value0 < value1){
+				value1=d1[++i1].value;
+			}
+			delta = abs((int)value0 - (int)value1);
+			if (delta < 2){
+				x00 = d0[i0].x0;
+				y00 = d0[i0].y0;
+				x01 = d0[i0].x1;
+				y01 = d0[i0].y1;
+
+				x10 = d1[i1].x0;
+				y10 = d1[i1].y0;
+				x11 = d1[i1].x1;
+				y11 = d1[i1].y1;	
+				printf("%d (%d,%d)-(%d,%d) %d (%d,%d)-(%d,%d)\n",value0,x00,y00,x01,y01,value1,x10,y10,x11,y11);			
+				printf("pt1(%d,%d) pt2(%d,%d)\n",x00-x10,y00-y10,x01-x11,y01-y11);
+				
+				i0++;
+			} else {
+				value0=d0[++i0].value;
+			}
+		}
+	}
+	
+	/*
+	
+		
+	x00 = d0[i0].x0;
+	y00 = d0[i0].y0;
+	x01 = d0[i0].x1;
+	y01 = d0[i0].y1;
+
+	x10 = d1[i1].x0;
+	y10 = d1[i1].y0;
+	x11 = d1[i1].x1;
+	y11 = d1[i1].y1;	
+	
+	printf("%d (%d,%d)-(%d,%d) %d (%d,%d)-(%d,%d)\n",value0,x00,y00,x01,y01,value1,x10,y10,x11,y11);
+	
+	*/
+	
+}
+/*
 void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, int* y)
 {
 	int size;
@@ -485,15 +631,16 @@ void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, 
 		}
 	}
 	
+	printf("%d - %d\n",value0,value1);
 	
-	for(i=i0;i<size;i++){
+	for(i=i0;i<i0+8;i++){
 		//printf("d0: %d\n",d0[i].value);
 		for(j=i1;j<size;j++){
 			//printf("d1: %d\n",d1[j].value);
 			delta = abs((int)d0[i].value - (int)d1[j].value);
-			if (d0[i].value < 500 || d1[j].value < 500)
+			if (d0[i].value < 20 || d1[j].value < 20)
 				continue;
-			if (delta < 2){
+			if (delta < 1){
 				// middle segment
 				x0 = (d0[i].x0 + d0[i].x1)/2;
 				y0 = (d0[i].y0 + d0[i].y1)/2;
@@ -506,7 +653,7 @@ void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, 
 		}
 	}	
 }
-
+*/
 int main(int argc, char* argv[]) {
 	
 		unsigned short* a;
