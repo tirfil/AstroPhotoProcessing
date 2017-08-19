@@ -13,6 +13,11 @@ typedef struct {
 } Pixel;
 
 typedef struct {
+	unsigned int x;
+	unsigned int y;
+} Pt;
+
+typedef struct {
 	unsigned int x0;
 	unsigned int y0;
 	unsigned int x1;
@@ -224,31 +229,166 @@ int stat(unsigned short* image,unsigned int size, unsigned short* average, unsig
 {
 	int i;
 	unsigned short tmp;
-	unsigned long sum, sum2;
-	unsigned long variance;
+	unsigned long long sum, sum2;
+	unsigned long long variance;
 	
 	sum = 0L;
 	sum2 = 0L;
 	
 	for (i=0; i<size; i++){
 		tmp = image[i];
-		sum  += (unsigned long) tmp;
-		sum2 += (unsigned long) tmp * (unsigned long) tmp;
+		sum  += (unsigned long long)tmp;
+		sum2 += (unsigned long long)tmp * (unsigned long long)tmp;
 	}
-	
-	*average = (unsigned short)(sum / (unsigned long) size);
-	variance = (sum2 / (unsigned long)size) - ((unsigned long)*average * (unsigned long)*average);
+	printf("sum2 = %lld\n",sum2);
+	*average = (unsigned short)(sum / (unsigned long long) size);
+	variance = (sum2 / (unsigned long long)size) - ((unsigned long long)(*average) * (unsigned long long)(*average));
 	*stddev = (unsigned short)sqrt((double)variance);
 
+	printf("variance = %lld\n",variance);
 	printf("average = %d\n",*average);
 	printf("standard deviation = %d\n",*stddev);
 	
 }
 
+bool isvalid(unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int level)
+{
+	if (x < level) return false;
+	if (y < level) return false;
+	if (x + level >= width) return false;
+	if (y + level >= height) return false;
+	return true;
+}
+
+unsigned int test_bound(unsigned short* image,unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int level,unsigned short threshold)
+{
+	int score;
+	int total;
+	int x0, y0;
+	total = 0;
+	score = 0;
+	y0=y-level;
+	for(x0=x-level;x0<=(x+level);x0++)
+	{
+		total++;
+		if (image[x0+y0*width] > threshold) score++;
+	}
+	y0=y+level;
+	for(x0=x-level;x0<=(x+level);x0++)
+	{
+		total++;
+		if (image[x0+y0*width] > threshold) score++;
+	}
+	x0=x-level;
+	for(y0=y-level;y0<=(y+level);y0++)
+	{
+		total++;
+		if (image[x0+y0*width] > threshold) score++;
+	}	
+	x0=x+level;
+	for(y0=y-level;y0<=(y+level);y0++)
+	{
+		total++;
+		if (image[x0+y0*width] > threshold) score++;
+
+	}	
+	score = score*100;
+	score = score/total;
+	return score;
+}
 /* 
  * Detect star objects. A star is a pixel surounded by less bright pixels.
  *
 */ 
+int* detect_stars(unsigned short* image, unsigned int width, unsigned int height, unsigned short threshold)
+{
+	int* stars;
+	unsigned int x,y;
+	unsigned int level;
+	unsigned int score;
+	bool cont;
+	unsigned int pmax;
+	int u,v;
+	int x0,y0;
+	
+	pmax=0;
+
+	
+	printf("detect_stars\n");
+	
+	stars = malloc(sizeof(int)*(width*height));
+	
+	for(y=0;y<height;y++){
+		for(x=0;x<width;x++){
+			cont = false;
+			if (image[x+y*width] > threshold){
+				score = 100;
+				level = 1;
+				while(score == 100){
+					if(isvalid(x,y,width,height,level)==true)
+					{
+						score = test_bound(image,x,y,width,height,level,threshold);
+					} else {
+						stars[x+y*width] = -1*level;
+						cont = true;
+						score = 0;
+					}
+
+					level++;
+				}
+				level--;
+				if(isvalid(x,y,width,height,2*level)==true)
+				{
+					score = test_bound(image,x,y,width,height,2*level,threshold);
+					if (score < 10){
+						stars[x+y*width] = level;
+							if (pmax < level){
+							printf("%d (%d,%d)\n", level,x,y);
+							pmax = level;
+						}
+					} else {
+						stars[x+y*width] = 0;
+					}
+				} else {
+					stars[x+y*width] = -1*level;
+				}				
+			} else {
+				stars[x+y*width] = 0;
+			}
+		}
+	}
+	
+	for(y=1;y<height-1;y++){
+		for(x=1;x<width-1;x++){
+			v = stars[x+y*width];
+			if (v != 0) 
+				for(x0=x-1;x0<=x+1;x0++)
+					for(y0=y-1;y0<=y+1;y0++){
+						if ( v < 0 ){
+							stars[x0+y0*width]=0;
+						} else {
+							u = stars[x0+y0*width];
+							if (u<v) stars[x0+y0*width]=0;
+						}
+					}
+		}
+	}
+	u = 0;
+	for(y=0;y<height;y++){
+		for(x=0;x<width;x++){
+			v = stars[x+y*width];
+			if (v < 0) 	stars[x+y*width]=0;
+			if (v > 2) {
+				u++;
+				printf("%d(%d,%d)\n",v,x,y);
+			}
+		}
+	}	
+	printf("counting stars = %d\n",u);
+	return stars;
+}
+
+/*
 unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned int height, unsigned short threshold)
 {
 	int x,y;
@@ -309,6 +449,7 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 	
 	return stars;
 }
+*/
 
 /*
 unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned int height, unsigned short threshold)
@@ -364,7 +505,7 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 /* 
  * Select brighter stars
 */
-Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int height, unsigned int number)
+Pixel* select_stars(int* stars, unsigned int width, unsigned int height, unsigned int number)
 {
 	unsigned short maxi;
 	unsigned short upper;
@@ -384,15 +525,18 @@ Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int heig
 	cont = true;
 	n = 0;
 	while(cont){
+		printf("pass1\n");
 		// pass 1
 		maxi = 0;
 		for(i=0;i<nelements;i++){
-			tmp = stars[i];
+			if (stars[i]<0) printf("%d:%d\n",i,stars[i]);
+			tmp = (unsigned short)stars[i];
 			if (( tmp > maxi ) && ( tmp <= upper ))
 			{
 				maxi = tmp;
 			} 
 		}
+		printf("maxi=%d\n",maxi);
 		// pass 2
 		//get_rand(true,nelements,&i); // init
 		//while(get_rand(false,nelements,&i)>0){
@@ -402,7 +546,7 @@ Pixel* select_stars(unsigned short* stars, unsigned int width, unsigned int heig
 			xx =  i % width;
 			yy =  i / width;
 			if (xx == 0 || yy == 0 || xx == width-1 || yy == height-1 ) continue;
-			tmp = stars[i];
+			tmp = (unsigned short)stars[i];
 			if (tmp == maxi){
 				pix[n].x = xx;
 				pix[n].y = yy;
@@ -517,9 +661,76 @@ void sort_distance(Distance* distance, unsigned int side)
 	}
 	printf("\n");
 }
+
+int get_two_points(Distance* d0, Distance* d1, unsigned int side, Pt* pta, Pt* ptb)
+{
+	int size;
+
+	int i;
+	unsigned int value0,value1;
+	int i0,i1;
+	int delta;
+	
+	size = ((side-1)*side)/2;
+	i0 = 0;
+	i1 = 0;
+	value0=d0[0].value;
+	value1=d1[0].value;	
+	
+	while((i0 < size-1) && (i1 < size-1)){
+		if (value0 > value1){
+			while(value0 > value1){
+				value0=d0[++i0].value;
+			}
+			delta = abs((int)value0 - (int)value1);
+			if (delta < 2){
+				pta[0].x = d0[i0].x0;
+				pta[0].y = d0[i0].y0;
+				pta[1].x = d0[i0].x1;
+				pta[1].y = d0[i0].y1;
+
+				ptb[0].x = d1[i1].x0;
+				ptb[0].y = d1[i1].y0;
+				ptb[1].x = d1[i1].x1;
+				ptb[1].y = d1[i1].y1;	
+				
+				return 0;
+				
+				//i1++;		
+			} else {
+				value1=d1[++i1].value;
+			}
+		} else {
+			while(value0 < value1){
+				value1=d1[++i1].value;
+			}
+			delta = abs((int)value0 - (int)value1);
+			if (delta < 2){
+				pta[0].x = d0[i0].x0;
+				pta[0].y = d0[i0].y0;
+				pta[1].x = d0[i0].x1;
+				pta[1].y = d0[i0].y1;
+
+				ptb[0].x = d1[i1].x0;
+				ptb[0].y = d1[i1].y0;
+				ptb[1].x = d1[i1].x1;
+				ptb[1].y = d1[i1].y1;	
+				
+				return 0;
+				//i0++;
+			} else {
+				value0=d0[++i0].value;
+			}
+		}
+	}
+	
+	return -1;
+}
+		
 /*
  * Compute translation x & y
  */
+ /*
 void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, int* y)
 {
 	int size;
@@ -584,7 +795,7 @@ void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, 
 		}
 	}
 	
-	/*
+
 	
 		
 	x00 = d0[i0].x0;
@@ -599,9 +810,9 @@ void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, 
 	
 	printf("%d (%d,%d)-(%d,%d) %d (%d,%d)-(%d,%d)\n",value0,x00,y00,x01,y01,value1,x10,y10,x11,y11);
 	
-	*/
+
 	
-}
+}*/
 /*
 void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, int* y)
 {
@@ -654,38 +865,244 @@ void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, 
 	}	
 }
 */
+
+int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned int number)
+{
+	int i;
+	int u0,v0,u1,v1;
+	int d0,d1;
+	bool change;
+	Pixel tmp;
+	int i0,i1;
+	unsigned short value0,value1;
+	//for(i=0;i<number;i++){
+		//printf("%d -- %d\n",pixelsa[i].value,pixelsb[i].value);
+		//printf("x %d -- %d\n",pixelsa[i].x,pixelsb[i].x);
+		//printf("y %d -- %d\n",pixelsa[i].y,pixelsb[i].y);
+	//}	
+	// compute distance
+	for(i=0;i<number;i++){
+		u0 = (int)(pta[0].x - pixelsa[i].x);
+		v0 = (int)(pta[0].y - pixelsa[i].y);	
+		u1 = (int)(pta[1].x - pixelsa[i].x);
+		v1 = (int)(pta[1].y - pixelsa[i].y);
+		d0 = u0*u0+v0*v0;
+		d1 = u1*u1+v1*v1;
+		if ( d0 < d1){
+			pixelsa[i].value = (unsigned short)(sqrt((double)d0));
+		} else {
+			pixelsa[i].value = (unsigned short)(sqrt((double)d1));
+		}
+	}
+	for(i=0;i<number;i++){
+		u0 = (int)(ptb[0].x - pixelsb[i].x);
+		v0 = (int)(ptb[0].y - pixelsb[i].y);	
+		u1 = (int)(ptb[1].x - pixelsb[i].x);
+		v1 = (int)(ptb[1].y - pixelsb[i].y);
+		d0 = u0*u0+v0*v0;
+		d1 = u1*u1+v1*v1;
+		if ( d0 < d1){
+			pixelsb[i].value = (unsigned short)(sqrt((double)d0));
+		} else {
+			pixelsb[i].value = (unsigned short)(sqrt((double)d1));
+		}
+	}
+	// sort
+	change = true;
+	while(change)
+	{
+		change = false;
+		for(i=0;i<number-1;i++){
+			if (pixelsa[i].value < pixelsa[i+1].value){
+				change = true;
+				tmp.value = pixelsa[i].value;
+				tmp.x     = pixelsa[i].x;
+				tmp.y     = pixelsa[i].y;
+				pixelsa[i].value = pixelsa[i+1].value;
+				pixelsa[i].x = pixelsa[i+1].x;
+				pixelsa[i].y = pixelsa[i+1].y;
+				pixelsa[i+1].value = tmp.value;
+				pixelsa[i+1].x = tmp.x;
+				pixelsa[i+1].y = tmp.y;
+			}
+		}
+	}
+	change = true;
+	while(change)
+	{
+		change = false;
+		for(i=0;i<number-1;i++){
+			if (pixelsb[i].value < pixelsb[i+1].value){
+				change = true;
+				tmp.value = pixelsb[i].value;
+				tmp.x     = pixelsb[i].x;
+				tmp.y     = pixelsb[i].y;
+				pixelsb[i].value = pixelsb[i+1].value;
+				pixelsb[i].x = pixelsb[i+1].x;
+				pixelsb[i].y = pixelsb[i+1].y;
+				pixelsb[i+1].value = tmp.value;
+				pixelsb[i+1].x = tmp.x;
+				pixelsb[i+1].y = tmp.y;
+			}
+		}
+	}
+	
+	//for(i=0;i<number;i++){
+		//printf("%d -- %d\n",pixelsa[i].value,pixelsb[i].value);
+		//printf("x %d -- %d\n",pixelsa[i].x,pixelsb[i].x);
+		//printf("y %d -- %d\n",pixelsa[i].y,pixelsb[i].y);
+	//}
+	
+	i0 = 0;
+	i1 = 0;
+	value0 = pixelsa[i0].value;
+	value1 = pixelsb[i1].value;
+	printf("%d %d\n",value0,value1);
+	while ((i0 < number-1) && (i1 < number-1)){
+		if (value0 > value1) {
+			while((value0 - value1) >= 2){
+				//printf("0");
+				value0 = pixelsa[++i0].value;
+			}
+			if (abs(value0 - value1) < 2 ){
+				printf("v= %d\n",value0);
+				pta[2].x = pixelsa[i0].x;
+				pta[2].y = pixelsa[i0].y;
+				ptb[2].x = pixelsb[i1].x;
+				ptb[2].y = pixelsb[i1].y;
+				return 0;		
+			}
+		} else {
+			while((value1 - value0) >= 2){
+				//printf("1");
+				value1 = pixelsb[++i1].value;
+			}
+			if (abs(value0 - value1) < 2 ){
+				printf("v= %d\n",value0);
+				pta[2].x = pixelsa[i0].x;
+				pta[2].y = pixelsa[i0].y;
+				ptb[2].x = pixelsb[i1].x;
+				ptb[2].y = pixelsb[i1].y;
+				return 0;		
+			}			
+		}
+	}
+	return -1;
+}
+
+int cramer3(int* m,int* s,double* abc){
+	int detM, detA,detB,detC;
+	detM = m[0]*(m[4]*m[8]-m[5]*m[7])-m[1]*(m[3]*m[8]-m[5]*m[6])+m[2]*(m[3]*m[7]-m[4]*m[6]);
+	printf("detM=%d\n",detM);
+	if (detM == 0) return -1;
+	detA = s[0]*(m[4]*m[8]-m[5]*m[7])-m[1]*(s[1]*m[8]-m[5]*s[2])+m[2]*(s[1]*m[7]-m[4]*s[2]);
+	detB = m[0]*(s[1]*m[8]-m[5]*s[2])-s[0]*(m[3]*m[8]-m[5]*m[6])+m[2]*(m[3]*s[2]-s[1]*m[6]);
+	detC = m[0]*(m[4]*s[2]-s[1]*m[7])-m[1]*(m[3]*s[2]-s[1]*m[6])+s[0]*(m[3]*m[7]-m[4]*m[6]);
+	abc[0]=(double)detA/(double)detM;
+	abc[1]=(double)detB/(double)detM;
+	abc[2]=(double)detC/(double)detM;
+	return 0;
+}
+
+int matrix3(Pt* pta, Pt* ptb, double* xabc, double*yabc) {
+	int m3x3[9];
+	int m3x1[3];
+	int rc;
+	
+	m3x3[0]=ptb[0].x;
+	m3x3[1]=ptb[0].y;
+	m3x3[2] = 1;
+	m3x1[0]=pta[0].x;
+	
+	m3x3[3]=ptb[1].x;
+	m3x3[4]=ptb[1].y;
+	m3x3[5] = 1;
+	m3x1[1]=pta[1].x;
+	
+	m3x3[6]=ptb[2].x;
+	m3x3[7]=ptb[2].y;
+	m3x3[8] = 1;
+	m3x1[2]=pta[2].x;	
+	
+	rc = cramer3(m3x3,m3x1,xabc);
+	
+	printf("x'= %f*x + %f*y + %f\n",xabc[0],xabc[1],xabc[2]);
+	
+	m3x3[0]=ptb[0].x;
+	m3x3[1]=ptb[0].y;
+	m3x3[2] = 1;
+	m3x1[0]=pta[0].y;
+	
+	m3x3[3]=ptb[1].x;
+	m3x3[4]=ptb[1].y;
+	m3x3[5] = 1;
+	m3x1[1]=pta[1].y;
+	
+	m3x3[6]=ptb[2].x;
+	m3x3[7]=ptb[2].y;
+	m3x3[8] = 1;
+	m3x1[2]=pta[2].y;
+	
+	rc = cramer3(m3x3,m3x1,yabc);
+	
+	printf("y'= %f*x + %f*y + %f\n",yabc[0],yabc[1],yabc[2]);
+	
+}
 int main(int argc, char* argv[]) {
 	
 		unsigned short* a;
 		unsigned short* b;
 		unsigned short* m;
-		unsigned short* stars;
-		Pixel* pixels;
+		int* stars;
+		Pixel* pixelsa;
+		Pixel* pixelsb;
 		Distance* dista;
 		Distance* distb;
 		int x;
 		int y;
 		unsigned short average;
 		unsigned short stddev;
+		
+		Pt pta[3];
+		Pt ptb[3];
+		
+		double xabc[3],yabc[3];
+		
+		int rc;
 	
 		if (read_fits(argv[1],&a) == 0){
 			if (read_fits(argv[2],&b) == 0){
 				m = medianfilter(a,width,height);
-				stat(a,width*height,&average,&stddev);
-				stars = detect_stars(m,width,height,average+stddev);
-				pixels = select_stars(stars,width,height,20);
-				dista = compute_distance(pixels,20);
+				stat(m,width*height,&average,&stddev);
+				stars = detect_stars(m,width,height,average+3*stddev);
+				printf("-- stars a\n");
+				pixelsa = select_stars(stars,width,height,20);
+				dista = compute_distance(pixelsa,20);
 				sort_distance(dista,20);
-				free(m);free(stars); free(pixels);
+				free(m);free(stars);
 				m = medianfilter(b,width,height);
-				stat(b,width*height,&average,&stddev);
-				stars = detect_stars(m,width,height,average+stddev);
-				pixels = select_stars(stars,width,height,20);
-				distb = compute_distance(pixels,20);
+				stat(m,width*height,&average,&stddev);
+				stars = detect_stars(m,width,height,average+3*stddev);
+				printf("-- stars b\n");
+				pixelsb = select_stars(stars,width,height,20);
+				distb = compute_distance(pixelsb,20);
 				sort_distance(distb,20);
-				free(m);free(stars); free(pixels);
-				compute_translation(dista,distb,20,&x,&y);
+				free(m);free(stars);
+				//compute_translation(dista,distb,20,&x,&y);
+				rc = get_two_points(dista,distb,20,pta,ptb);
+				
+				if (rc == 0){
+					printf("a: (%d,%d)-(%d,%d)\n",pta[0].x,pta[0].y,pta[1].x,pta[1].y);
+					printf("b: (%d,%d)-(%d,%d)\n",ptb[0].x,ptb[0].y,ptb[1].x,ptb[1].y);
+					rc = add_third_point(pta,ptb,pixelsa,pixelsb,20);
+					if (rc == 0){
+						printf("a3: (%d,%d)\n",pta[2].x,pta[2].y);
+						printf("b3: (%d,%d)\n",ptb[2].x,ptb[2].y);
+					}
+				}			
 				free(dista); free(distb);
+				free(pixelsa); free(pixelsb);
+				matrix3(pta,ptb,xabc,yabc);
 				free(a);free(b);
 			}
 		}
