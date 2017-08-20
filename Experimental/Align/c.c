@@ -96,15 +96,15 @@ int read_fits(char* path, unsigned short** image)
 int write_fits(char* path,unsigned short* image)
 {
 	fitsfile *fptrout;
-	unsigned int naxis = 2;
+	long naxis = 2;
     long naxes[2];
     int status = 0;
-    long nelements = width*height;
-    naxes[0] = width;
-	naxes[1] = height;
+    unsigned long nelements = (unsigned long)width*(unsigned long)height;
+    naxes[0] = (long)width;
+	naxes[1] = (long)height;
 	fits_create_file(&fptrout,path, &status);
 	fits_create_img(fptrout, USHORT_IMG, naxis, naxes, &status);
-	fits_write_img(fptrout, TUSHORT, 1, nelements, image, &status);
+	fits_write_img(fptrout, TUSHORT, (long long)1L, (long long)nelements, image, &status);
 	fits_close_file(fptrout, &status);
 }
 
@@ -1048,6 +1048,31 @@ int matrix3(Pt* pta, Pt* ptb, double* xabc, double*yabc) {
 	printf("y'= %f*x + %f*y + %f\n",yabc[0],yabc[1],yabc[2]);
 	
 }
+
+void convert(unsigned short* in,unsigned short** out, int width, int height, double* xabc, double* yabc)
+{
+	
+	int nelements;
+	int i;
+	int x,y;
+	int u,v;
+	
+	nelements = width*height;
+	*out = malloc(sizeof(unsigned short)*nelements);
+	// init
+	for(i=0;i<nelements;i++)
+		(*out)[i]=0;
+	// convert
+	for(y=0;y<height;y++)
+	for(x=0;x<width;x++){
+		u = floor(0.5+xabc[0]*(double)x+xabc[1]*(double)y+xabc[2]);
+		if (u<0 || u>=width) continue;
+		v = floor(0.5+yabc[0]*(double)x+yabc[1]*(double)y+yabc[2]);
+		if (v<0 || v>=height) continue;
+		(*out)[u+v*width]=in[x+y*width];
+	}
+}
+
 int main(int argc, char* argv[]) {
 	
 		unsigned short* a;
@@ -1069,6 +1094,8 @@ int main(int argc, char* argv[]) {
 		double xabc[3],yabc[3];
 		
 		int rc;
+		
+		unsigned short* im;
 	
 		if (read_fits(argv[1],&a) == 0){
 			if (read_fits(argv[2],&b) == 0){
@@ -1103,6 +1130,10 @@ int main(int argc, char* argv[]) {
 				free(dista); free(distb);
 				free(pixelsa); free(pixelsb);
 				matrix3(pta,ptb,xabc,yabc);
+				convert(b,&im,width,height,xabc,yabc);
+				printf("write\n");
+				write_fits("out.fits",im);
+				free(im);
 				free(a);free(b);
 			}
 		}
