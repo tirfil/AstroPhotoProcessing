@@ -674,9 +674,36 @@ int get_two_points(Distance* d0, Distance* d1, unsigned int side, Pt* pta, Pt* p
 	size = ((side-1)*side)/2;
 	i0 = 0;
 	i1 = 0;
-	value0=d0[0].value;
-	value1=d1[0].value;	
+	value0=d0[i0].value;
+	value1=d1[i1].value;
 	
+	while(abs(value0-value1) > 2){
+		if ( value0 > value1){
+			i0++;
+		} else {
+			i1++;
+		}
+		if ((i0 == size) || (i1 == size)){
+			return -1;
+		} else {
+			value0=d0[i0].value;
+			value1=d1[i1].value;	
+		}		
+	}
+	printf("distance 12 = %d\n",value0);	
+	if (value0 < 10) return -1;
+	pta[0].x = d0[i0].x0;
+	pta[0].y = d0[i0].y0;
+	pta[1].x = d0[i0].x1;
+	pta[1].y = d0[i0].y1;
+
+	ptb[0].x = d1[i1].x0;
+	ptb[0].y = d1[i1].y0;
+	ptb[1].x = d1[i1].x1;
+	ptb[1].y = d1[i1].y1;	
+	
+	return 0;
+/*	
 	while((i0 < size-1) && (i1 < size-1)){
 		if (value0 > value1){
 			while(value0 > value1){
@@ -725,6 +752,7 @@ int get_two_points(Distance* d0, Distance* d1, unsigned int side, Pt* pta, Pt* p
 	}
 	
 	return -1;
+*/
 }
 		
 /*
@@ -957,6 +985,31 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 	i1 = 0;
 	value0 = pixelsa[i0].value;
 	value1 = pixelsb[i1].value;
+	while(abs(value0 - value1) > 2){
+		if (value0 > value1){
+			i0++;
+		} else {
+			i1++;
+		}
+		if ((i0 == number) || (i1 == number)){
+			return -1;
+		} else {
+			value0 = pixelsa[i0].value;
+			value1 = pixelsb[i1].value;	
+		}	
+	}
+	printf("distance 3 min = %d\n",value0);
+	if (value0 < 10) return -1;
+	pta[2].x = pixelsa[i0].x;
+	pta[2].y = pixelsa[i0].y;
+	ptb[2].x = pixelsb[i1].x;
+	ptb[2].y = pixelsb[i1].y;
+	return 0;		
+/*		
+	i0 = 0;
+	i1 = 0;
+	value0 = pixelsa[i0].value;
+	value1 = pixelsb[i1].value;
 	printf("%d %d\n",value0,value1);
 	while ((i0 < number-1) && (i1 < number-1)){
 		if (value0 > value1) {
@@ -988,6 +1041,7 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 		}
 	}
 	return -1;
+*/
 }
 
 int cramer3(int* m,int* s,double* abc){
@@ -1116,24 +1170,31 @@ int main(int argc, char* argv[]) {
 				sort_distance(distb,20);
 				free(m);free(stars);
 				//compute_translation(dista,distb,20,&x,&y);
-				rc = get_two_points(dista,distb,20,pta,ptb);
-				
-				if (rc == 0){
-					printf("a: (%d,%d)-(%d,%d)\n",pta[0].x,pta[0].y,pta[1].x,pta[1].y);
-					printf("b: (%d,%d)-(%d,%d)\n",ptb[0].x,ptb[0].y,ptb[1].x,ptb[1].y);
-					rc = add_third_point(pta,ptb,pixelsa,pixelsb,20);
-					if (rc == 0){
-						printf("a3: (%d,%d)\n",pta[2].x,pta[2].y);
-						printf("b3: (%d,%d)\n",ptb[2].x,ptb[2].y);
-					}
-				}			
+				rc = get_two_points(dista,distb,20,pta,ptb);				
+				if (rc < 0){
+					free(dista); free(distb);
+					free(pixelsa); free(pixelsb);
+					free(a);free(b);
+					return -1;
+				}	
+
+				rc = add_third_point(pta,ptb,pixelsa,pixelsb,20);
+				if (rc < 0){
+					free(dista); free(distb);
+					free(pixelsa); free(pixelsb);
+					free(a);free(b);
+					return -1;
+				}
+				printf("a: (%d,%d)-(%d,%d)-(%d,%d)\n",pta[0].x,pta[0].y,pta[1].x,pta[1].y,pta[2].x,pta[2].y);
+				printf("b: (%d,%d)-(%d,%d)-(%d,%d)\n",ptb[0].x,ptb[0].y,ptb[1].x,ptb[1].y,ptb[2].x,ptb[2].y);		
 				free(dista); free(distb);
 				free(pixelsa); free(pixelsb);
 				matrix3(pta,ptb,xabc,yabc);
 				convert(b,&im,width,height,xabc,yabc);
+				m = medianfilter(im,width,height);
 				printf("write\n");
-				write_fits("out.fits",im);
-				free(im);
+				write_fits(argv[3],m);
+				free(im); free(m);
 				free(a);free(b);
 			}
 		}
