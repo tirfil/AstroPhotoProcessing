@@ -1149,7 +1149,11 @@ int main(int argc, char* argv[]) {
 		
 		int rc;
 		
+		int npts;
+		
 		unsigned short* im;
+	
+		npts = 30;
 	
 		if (read_fits(argv[1],&a) == 0){
 			if (read_fits(argv[2],&b) == 0){
@@ -1157,20 +1161,20 @@ int main(int argc, char* argv[]) {
 				stat(m,width*height,&average,&stddev);
 				stars = detect_stars(m,width,height,average+3*stddev);
 				printf("-- stars a\n");
-				pixelsa = select_stars(stars,width,height,20);
-				dista = compute_distance(pixelsa,20);
-				sort_distance(dista,20);
+				pixelsa = select_stars(stars,width,height,npts);
+				dista = compute_distance(pixelsa,npts);
+				sort_distance(dista,npts);
 				free(m);free(stars);
 				m = medianfilter(b,width,height);
 				stat(m,width*height,&average,&stddev);
 				stars = detect_stars(m,width,height,average+3*stddev);
 				printf("-- stars b\n");
-				pixelsb = select_stars(stars,width,height,20);
-				distb = compute_distance(pixelsb,20);
-				sort_distance(distb,20);
+				pixelsb = select_stars(stars,width,height,npts);
+				distb = compute_distance(pixelsb,npts);
+				sort_distance(distb,npts);
 				free(m);free(stars);
 				//compute_translation(dista,distb,20,&x,&y);
-				rc = get_two_points(dista,distb,20,pta,ptb);				
+				rc = get_two_points(dista,distb,npts,pta,ptb);				
 				if (rc < 0){
 					free(dista); free(distb);
 					free(pixelsa); free(pixelsb);
@@ -1178,7 +1182,7 @@ int main(int argc, char* argv[]) {
 					return -1;
 				}	
 
-				rc = add_third_point(pta,ptb,pixelsa,pixelsb,20);
+				rc = add_third_point(pta,ptb,pixelsa,pixelsb,npts);
 				if (rc < 0){
 					free(dista); free(distb);
 					free(pixelsa); free(pixelsb);
