@@ -15,6 +15,15 @@ typedef struct {
 typedef struct {
 	unsigned int x;
 	unsigned int y;
+	unsigned int n;
+	unsigned int maxi;
+	unsigned long sumx;
+	unsigned long sumy;
+} Pixel2;
+
+typedef struct {
+	unsigned int x;
+	unsigned int y;
 } Pt;
 
 typedef struct {
@@ -505,6 +514,7 @@ unsigned short* detect_stars(unsigned short* image, unsigned int width, unsigned
 /* 
  * Select brighter stars
 */
+/*
 Pixel* select_stars(int* stars, unsigned int width, unsigned int height, unsigned int number)
 {
 	unsigned short maxi;
@@ -565,6 +575,127 @@ Pixel* select_stars(int* stars, unsigned int width, unsigned int height, unsigne
 	}
 	//for(i=0;i<number;i++)
 		//printf("(%d,%d)\n",pix[i].x,pix[i].y);
+	return pix;
+}*/
+Pixel* select_stars(int* stars, unsigned int width, unsigned int height, unsigned int* number)
+{
+	unsigned short maxi;
+	unsigned short upper;
+	unsigned short tmp;
+	int i,j,n;
+	unsigned int x,y;
+	unsigned int nelements;
+	unsigned int xx,yy;
+
+	Pixel* pix;
+	bool cont;
+	
+	Pixel2* tab;
+	int next = 0;
+	int k;
+	int dx,dy;
+	bool new;
+	
+	printf("select_stars\n");
+	nelements = width*height;
+	pix = malloc(sizeof(Pixel)*(*number));
+	upper = USHRT_MAX;	
+	cont = true;
+	n = 0;
+	while(cont){
+		// pass 1
+		maxi = 0;
+		for(i=0;i<nelements;i++){
+			if (stars[i]<0) printf("%d:%d\n",i,stars[i]);
+			tmp = (unsigned short)stars[i];
+			if (( tmp > maxi ) && ( tmp <= upper ))
+			{
+				maxi = tmp;
+			} 
+		}
+		printf("maxi=%d\n",maxi);
+		// pass 2
+		//get_rand(true,nelements,&i); // init
+		//while(get_rand(false,nelements,&i)>0){
+		i = 0;
+		for(j=0;j<nelements;j++){
+			i = (i + 1013)%nelements;  // 1013 prime
+			xx =  i % width;
+			yy =  i / width;
+			if (xx == 0 || yy == 0 || xx == width-1 || yy == height-1 ) continue;
+			tmp = (unsigned short)stars[i];
+			if (tmp == maxi){
+				printf("process (%d,%d)\n",xx,yy);
+				if (next == 0){
+					tab = malloc(sizeof(Pixel2)*(*number));
+					tab[0].x = xx;
+					tab[0].y = yy;
+					tab[0].sumx = xx;
+					tab[0].sumy = yy;
+					tab[0].n = 1;
+					tab[0].maxi = maxi;
+					next = 1;
+				} else {
+					new = true;
+					//printf("next=%d\n",next);
+					for (k=0;k<next;k++){
+						//printf("k=%d",k);
+						dx = xx - tab[k].x;
+						dy = yy - tab[k].y;
+						if ((dx*dx+dy*dy) < (tab[k].maxi*tab[k].maxi)){
+							if (tab[k].maxi == maxi){
+								printf("found k=%d\n",k);
+								tab[k].n += 1;
+								tab[k].sumx += xx;
+								tab[k].sumy += yy;
+								new = false;
+							} else {
+								printf("ignored k=%d\n",k);
+								new = false;
+							}
+							break;
+						}
+					}
+					if (new){
+						printf("new next=%d\n",next);
+						tab[next].x = xx;
+						tab[next].y = yy;
+						tab[next].sumx = xx;
+						tab[next].sumy = yy;
+						tab[next].n = 1;
+						tab[next].maxi = maxi;
+						next++;
+					}
+				}
+				//pix[n].x = xx;
+				//pix[n].y = yy;
+				//pix[n].value = tmp;
+				//printf("%d: (%d,%d) - %d\n",n,pix[n].x,pix[n].y,pix[n].value);
+				//n++;
+				//if (n == number){
+				if (next == *number){
+					cont = false;
+					break;
+				}
+			}
+		}
+		//get_rand(false,0,&i); // free
+		if (cont == false) break;
+		if (upper > 0) upper = maxi - 1;
+		if (upper == 2){
+			 *number = next;
+			 break;
+		}
+	}
+	//for(i=0;i<number;i++)
+		//printf("(%d,%d)\n",pix[i].x,pix[i].y);
+	for(i=0;i<(*number);i++){
+		pix[i].x = tab[i].sumx/tab[i].n;
+		pix[i].y = tab[i].sumy/tab[i].n;
+		pix[i].value = tab[i].n;
+		printf("%d:(%d,%d) - %d\n",i,pix[i].x,pix[i].y,tab[i].n);
+	}
+	free(tab);
 	return pix;
 }
 
@@ -662,16 +793,17 @@ void sort_distance(Distance* distance, unsigned int side)
 	printf("\n");
 }
 
-int get_two_points(Distance* d0, Distance* d1, unsigned int side, Pt* pta, Pt* ptb)
+int get_two_points(Distance* d0, Distance* d1, unsigned int sidea, unsigned sideb, Pt* pta, Pt* ptb)
 {
-	int size;
+	int sizea,sizeb;
 
 	int i;
 	unsigned int value0,value1;
 	int i0,i1;
 	int delta;
 	
-	size = ((side-1)*side)/2;
+	sizea = ((sidea-1)*sidea)/2;
+	sizea = ((sideb-1)*sideb)/2;
 	i0 = 0;
 	i1 = 0;
 	value0=d0[i0].value;
@@ -683,7 +815,7 @@ int get_two_points(Distance* d0, Distance* d1, unsigned int side, Pt* pta, Pt* p
 		} else {
 			i1++;
 		}
-		if ((i0 == size) || (i1 == size)){
+		if ((i0 == sizea) || (i1 == sizeb)){
 			return -1;
 		} else {
 			value0=d0[i0].value;
@@ -894,7 +1026,7 @@ void compute_translation(Distance* d0, Distance* d1, unsigned int side, int* x, 
 }
 */
 
-int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned int number)
+int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned int numbera,unsigned int numberb)
 {
 	int i;
 	int u0,v0,u1,v1;
@@ -909,7 +1041,7 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 		//printf("y %d -- %d\n",pixelsa[i].y,pixelsb[i].y);
 	//}	
 	// compute distance
-	for(i=0;i<number;i++){
+	for(i=0;i<numbera;i++){
 		u0 = (int)(pta[0].x - pixelsa[i].x);
 		v0 = (int)(pta[0].y - pixelsa[i].y);	
 		u1 = (int)(pta[1].x - pixelsa[i].x);
@@ -922,7 +1054,7 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 			pixelsa[i].value = (unsigned short)(sqrt((double)d1));
 		}
 	}
-	for(i=0;i<number;i++){
+	for(i=0;i<numberb;i++){
 		u0 = (int)(ptb[0].x - pixelsb[i].x);
 		v0 = (int)(ptb[0].y - pixelsb[i].y);	
 		u1 = (int)(ptb[1].x - pixelsb[i].x);
@@ -940,7 +1072,7 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 	while(change)
 	{
 		change = false;
-		for(i=0;i<number-1;i++){
+		for(i=0;i<numbera-1;i++){
 			if (pixelsa[i].value < pixelsa[i+1].value){
 				change = true;
 				tmp.value = pixelsa[i].value;
@@ -959,7 +1091,7 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 	while(change)
 	{
 		change = false;
-		for(i=0;i<number-1;i++){
+		for(i=0;i<numberb-1;i++){
 			if (pixelsb[i].value < pixelsb[i+1].value){
 				change = true;
 				tmp.value = pixelsb[i].value;
@@ -991,7 +1123,7 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 		} else {
 			i1++;
 		}
-		if ((i0 == number) || (i1 == number)){
+		if ((i0 == numbera) || (i1 == numberb)){
 			return -1;
 		} else {
 			value0 = pixelsa[i0].value;
@@ -1080,6 +1212,8 @@ int matrix3(Pt* pta, Pt* ptb, double* xabc, double*yabc) {
 	
 	rc = cramer3(m3x3,m3x1,xabc);
 	
+	if (rc < 0) return -1;
+	
 	printf("x'= %f*x + %f*y + %f\n",xabc[0],xabc[1],xabc[2]);
 	
 	m3x3[0]=ptb[0].x;
@@ -1099,11 +1233,15 @@ int matrix3(Pt* pta, Pt* ptb, double* xabc, double*yabc) {
 	
 	rc = cramer3(m3x3,m3x1,yabc);
 	
+	if (rc < 0) return -1;
+	
 	printf("y'= %f*x + %f*y + %f\n",yabc[0],yabc[1],yabc[2]);
+	
+	return 0;
 	
 }
 
-void convert(unsigned short* in,unsigned short** out, int width, int height, double* xabc, double* yabc)
+void translate(unsigned short* in,unsigned short** out, int width, int height, double* xabc, double* yabc)
 {
 	
 	int nelements;
@@ -1149,32 +1287,33 @@ int main(int argc, char* argv[]) {
 		
 		int rc;
 		
-		int npts;
+		int nptsa,nptsb;
 		
 		unsigned short* im;
 	
-		npts = 30;
+		nptsa = 20;
+		nptsb = 20;
 	
 		if (read_fits(argv[1],&a) == 0){
-			if (read_fits(argv[2],&b) == 0){
+			if (read_fits(argv[2],&b) == 0){		
 				m = medianfilter(a,width,height);
 				stat(m,width*height,&average,&stddev);
 				stars = detect_stars(m,width,height,average+3*stddev);
 				printf("-- stars a\n");
-				pixelsa = select_stars(stars,width,height,npts);
-				dista = compute_distance(pixelsa,npts);
-				sort_distance(dista,npts);
+				pixelsa = select_stars(stars,width,height,&nptsa);
+				dista = compute_distance(pixelsa,nptsa);
+				sort_distance(dista,nptsa);
 				free(m);free(stars);
 				m = medianfilter(b,width,height);
 				stat(m,width*height,&average,&stddev);
 				stars = detect_stars(m,width,height,average+3*stddev);
 				printf("-- stars b\n");
-				pixelsb = select_stars(stars,width,height,npts);
-				distb = compute_distance(pixelsb,npts);
-				sort_distance(distb,npts);
+				pixelsb = select_stars(stars,width,height,&nptsb);
+				distb = compute_distance(pixelsb,nptsb);
+				sort_distance(distb,nptsb);
 				free(m);free(stars);
 				//compute_translation(dista,distb,20,&x,&y);
-				rc = get_two_points(dista,distb,npts,pta,ptb);				
+				rc = get_two_points(dista,distb,nptsa,nptsb,pta,ptb);				
 				if (rc < 0){
 					free(dista); free(distb);
 					free(pixelsa); free(pixelsb);
@@ -1182,7 +1321,7 @@ int main(int argc, char* argv[]) {
 					return -1;
 				}	
 
-				rc = add_third_point(pta,ptb,pixelsa,pixelsb,npts);
+				rc = add_third_point(pta,ptb,pixelsa,pixelsb,nptsa,nptsb);
 				if (rc < 0){
 					free(dista); free(distb);
 					free(pixelsa); free(pixelsb);
@@ -1193,12 +1332,23 @@ int main(int argc, char* argv[]) {
 				printf("b: (%d,%d)-(%d,%d)-(%d,%d)\n",ptb[0].x,ptb[0].y,ptb[1].x,ptb[1].y,ptb[2].x,ptb[2].y);		
 				free(dista); free(distb);
 				free(pixelsa); free(pixelsb);
-				matrix3(pta,ptb,xabc,yabc);
-				convert(b,&im,width,height,xabc,yabc);
-				m = medianfilter(im,width,height);
-				printf("write\n");
-				write_fits(argv[3],m);
-				free(im); free(m);
+				rc = matrix3(pta,ptb,xabc,yabc);
+				if (rc < 0){
+					free(a);free(b);
+					return -1;
+				}
+				// xabc[0] and yabc[1] around 1.0
+				// xabc[1] and yabc[0] around 0.0
+				if (xabc[0]>0.5 && xabc[0]< 1.5 && xabc[1]<0.5 && xabc[1]>-0.5 &&
+					yabc[1]>0.5 && yabc[1]< 1.5 && yabc[0]<0.5 && yabc[0]>-0.5 ){
+					translate(b,&im,width,height,xabc,yabc);
+					m = medianfilter(im,width,height);
+					printf("write %s\n",argv[3]);
+					write_fits(argv[3],m);
+					free(im); free(m);
+				} else {
+					return -1;
+				}
 				free(a);free(b);
 			}
 		}
