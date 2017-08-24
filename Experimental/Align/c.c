@@ -1030,7 +1030,7 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 {
 	int i;
 	int u0,v0,u1,v1;
-	int d0,d1;
+	int d0,d1,d2,d3;
 	bool change;
 	Pixel tmp;
 	int i0,i1;
@@ -1136,7 +1136,44 @@ int add_third_point(Pt* pta, Pt* ptb, Pixel* pixelsa, Pixel* pixelsb, unsigned i
 	pta[2].y = pixelsa[i0].y;
 	ptb[2].x = pixelsb[i1].x;
 	ptb[2].y = pixelsb[i1].y;
-	return 0;		
+	
+	// check distance
+	u0 = (int)pta[2].x - (int)pta[0].x; 
+	v0 = (int)pta[2].y - (int)pta[0].y;
+	d0 = u0*u0+v0*v0;
+	d0 = (int)sqrt((double)d0);
+	u1 = (int)pta[2].x - (int)pta[1].x;
+	v1 = (int)pta[2].y - (int)pta[1].y;
+	d1 = u1*u1+v1*v1;
+	d1 = (int)sqrt((double)d1);	
+	printf("a: d2.d0=%d d2.d1=%d\n",d0,d1);
+	
+	u0 = (int)ptb[2].x - (int)ptb[0].x;
+	v0 = (int)ptb[2].y - (int)ptb[0].y;
+	d2 = u0*u0+v0*v0;
+	d2 = (int)sqrt((double)d2);
+	u1 = (int)ptb[2].x - (int)ptb[1].x;
+	v1 = (int)ptb[2].y - (int)ptb[1].y;
+	d3 = u1*u1+v1*v1;
+	d3 = (int)sqrt((double)d3);	
+	printf("b: d2.d0=%d d2.d1=%d\n",d2,d3);	
+	
+	if ((abs(d0-d2) < 3) && (abs(d1-d3) < 3)) return 0;
+	
+	if ((abs(d0-d3) < 3) && (abs(d1-d2) < 3)){
+		// swap pt0 and pt1
+		printf("Swap pt0 and pt1\n");
+		u0 = ptb[1].x;
+		v0 = ptb[1].y;
+		ptb[1].x = ptb[0].x;
+		ptb[1].y = ptb[0].y;
+		ptb[0].x = u0;
+		ptb[0].y = v0;
+		return 0;
+	}
+	printf("No match\n");
+	return -1;
+	
 /*		
 	i0 = 0;
 	i1 = 0;
@@ -1339,8 +1376,8 @@ int main(int argc, char* argv[]) {
 				}
 				// xabc[0] and yabc[1] around 1.0
 				// xabc[1] and yabc[0] around 0.0
-				if (xabc[0]>0.5 && xabc[0]< 1.5 && xabc[1]<0.5 && xabc[1]>-0.5 &&
-					yabc[1]>0.5 && yabc[1]< 1.5 && yabc[0]<0.5 && yabc[0]>-0.5 ){
+				if (xabc[0]>0.8 && xabc[0]< 1.2 && xabc[1]<0.2 && xabc[1]>-0.2 &&
+					yabc[1]>0.8 && yabc[1]< 1.2 && yabc[0]<0.2 && yabc[0]>-0.2 ){
 					translate(b,&im,width,height,xabc,yabc);
 					m = medianfilter(im,width,height);
 					printf("write %s\n",argv[3]);
