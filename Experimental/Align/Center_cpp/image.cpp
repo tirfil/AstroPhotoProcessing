@@ -723,12 +723,12 @@ Image::search_third_pixel(Pixel* pt1, Pixel* pt2, Triangle* tri)
 	int dist2 = (tri->db);
 	int dist3 = (tri->dc);
 	while(ptr3 != NULL){
-		if (abs(dist2-(int)sqrt((double)get_dist2(pt1,ptr3))) > 0){
+		if (abs(dist2-(int)sqrt((double)get_dist2(pt1,ptr3))) > 1){
 			ptr3 = ptr3->ptr;
 		} else {
 			pt3 = ptr3;
 			// check
-			if (abs(dist3-(int)sqrt((double)get_dist2(pt2,pt3))) > 0){
+			if (abs(dist3-(int)sqrt((double)get_dist2(pt2,pt3))) > 1){
 				ptr3 = ptr3->ptr;
 				continue;
 			} else {
@@ -777,7 +777,7 @@ Image::compare_triangles(Triangle* other){
 			{
 				//printf("\r%d",aa++);
 				//printf("dist2=%d (%d,%d)(%d,%d) %d\n",dist2,ptr1->x,ptr1->y,ptr2->x,ptr2->y,get_dist2(ptr1,ptr2));
-				if (abs(dist2-(int)sqrt((double)get_dist2(ptr1,ptr2))) > 0){
+				if (abs(dist2-(int)sqrt((double)get_dist2(ptr1,ptr2))) > 1){
 					ptr2 = ptr2->ptr;
 				} else {
 					if ((ptr1->x) > (ptr2->x)) {
