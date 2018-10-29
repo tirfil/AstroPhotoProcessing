@@ -91,8 +91,8 @@ Image::get_coefficients(double* coefficients, Triangle* reference)
 	//compute_triangle();
 	rc = compare_triangles(reference);
 	if (rc < 0 ) return -1;	
-	rc = compute_coeff();
-	if (rc < 0 ) return -1;
+	//rc = compute_coeff();
+	//if (rc < 0 ) return -1;
 	coefficients[0] = m_xcoeff[0];
 	coefficients[1] = m_xcoeff[1];
 	coefficients[2] = m_xcoeff[2];
@@ -372,6 +372,9 @@ Image::correct_pix(Pixel* in, int level)
 		in->z = dy;
 	else
 		in->z = dx;
+		
+		
+	//printf("(%d,%d) %d\n",in->x,in->y,in->z);
 	
 }
 
@@ -391,6 +394,7 @@ Image::detect_stars(int level)
 	int n=0;
 	root = NULL;
 	curr = NULL;
+
 
 	for (int y=1;y<(int)m_height-1;y++){
 		for(int x=1;x<(int)m_width-1;x++){
@@ -434,6 +438,8 @@ Image::detect_stars(int level)
 	//printf("-");
 	curr = root;
 	while(curr != NULL){
+		correct_pix(curr,level);
+		correct_pix(curr,level);
 		correct_pix(curr,level);
 		curr = curr->ptr;
 	}
@@ -485,145 +491,34 @@ Image::detect_stars(int level)
 		ptr1 = ptr1->ptr;
 	}
 	printf("\ndetect %d point(s)\n",n);	
-	
+
+	// sort bigger first
+	do {
+		ptr1 = root;
+		n = 0;
+		while(ptr1 != NULL){
+			ptr2 = ptr1->ptr;
+			if (ptr2 == NULL) break;
+			if ((ptr2->z) > (ptr1->z)){
+				n++;
+				ptr1->ptr = ptr2->ptr;
+				ptr2->ptr = ptr1;
+				if (ptr1 == root){			
+					root = ptr2;
+				} else {
+					prev->ptr = ptr2;
+				}
+				prev = ptr2;
+			} else {
+				prev = ptr1;
+				ptr1 = ptr1->ptr;
+			}
+		}
+	} while (n>0);
+
 	m_pixels = root;
 	//debug();
 }
-
-//int
-//Image::detect_stars(int level)
-//{
-	//Pixel px;
-	////m_pixels = malloc(sizeof(Pixel)*NB_STARS);
-	
-	//Pixel* curr = NULL;
-	//Pixel* ptr = NULL;
-	//int pp=0;
-	//int n=0;
-	//int pt;
-	//long dist2;
-	//int x,y;
-	//unsigned short us;
-	//int store = 0;
-	//bool out = false;
-	
-	//int nelements = m_height * m_width;
-	//for (int i=0;i<nelements;i++){
-		//us = m_image[i];
-		//if (i%m_width==0)
-			//n=0;
-		//if (us>level){
-			//n++;
-		//} else {
-			//if ((n>0) && (n>store)) {
-				//store = n;
-			//}
-			//n=0;
-		//}
-	//}
-
-	//do {
-		////printf("store=%d\n",store);
-		//for (int i=0;i<nelements;i++){
-			//us = m_image[i];
-			//if (i%m_width==0) n=0;
-			//if (us>level){
-				//n++;
-				//if(store==n){
-					//pt=i-(store/2);
-					//px.y = pt / m_width;
-					//px.x = pt % m_width;
-					//px.z = store; 
-					//if (pp==0){
-						//m_pixels = (Pixel*)malloc(sizeof(Pixel));
-						////curr = new(Pixel);
-						//curr = m_pixels;
-						//curr->x=px.x;
-						//curr->y=px.y;
-						//curr->z=px.z;
-						//curr->ptr=NULL;
-						//printf("0: (%d,%d) - %d\n",px.x,px.y,px.z);
-						////debug();
-						//pp++;
-					//} else {
-						//ptr = m_pixels;
-						////for(int j=0;j<pp;j++)
-						//while(ptr != NULL)
-						//{
-							//// compute distance
-							////printf("compute distance: %d %d\n",i,pp);
-							//dist2 = get_dist2(&px,ptr);
-							
-							////n=(px.x-(ptr->x));
-							////dist2 = n*n;
-							////n=(px.y-(ptr->y)); 
-							////dist2 += n*n;
-							
-							//if (dist2<=1000)
-							//{
-								//dist2=0;
-								//break;
-							//}
-							//ptr = ptr->ptr;
-						//}
-						
-						//if (dist2>0){
-							////printf("next point\n");
-							//if ( px.z < MIN_PIX) {
-								////printf("Go out\n");
-								//out = true;
-								//curr->ptr = NULL;
-								//break;
-							//} 
-							////debug();
-							//if (curr->ptr == NULL) curr->ptr = (Pixel*)malloc(sizeof(Pixel));
-							////curr->ptr = new(Pixel);
-							//curr = curr->ptr;
-							//curr->x=px.x;
-							//curr->y=px.y;
-							//curr->z=px.z;
-							//curr->ptr=NULL;
-							//printf("%d: (%d,%d) - %d\n",pp,px.x,px.y,px.z);
-							//pp++;
-						//}						
-					//}
-				//}
-			//} else {
-				//n=0;
-			//}
-		//}
-		//store--;
-	//} while((pp < NB_STARS) && (out == false));
-//}
-
-//Image::select_stars(int size)
-//{
-	//// filter 
-	//unsigned short us;
-	//int pos;
-	//long nelements = m_height * m_width;
-	//int upper = INT_MAX;
-	//int j = 0;
-	//int maxi = 0;
-	
-	//for (int i=0;i<size;i++){
-		//for(int k=0;k<nelements;k++){
-			//us = m_stars[k];
-			//if ((maxi < us) && (us < upper)){
-				//maxi = us;
-				//pos = k;
-			//}
-		//}
-		//upper=maxi;
-		//maxi = 0;
-		//if (upper == 0) break;
-		
-		////pxa[j].x = pos % width;
-		////pxa[j].y = pos / width;
-		//j++;
-		//printf("%d:\t(%d,%d)\t- %d\n",j,pos % m_width, pos / m_width,upper);
-	//}
-//}
 
 int	
 Image::compute_triangle()
@@ -639,11 +534,49 @@ Image::compute_triangle()
 	int val1;
 	int base;
 	int side0, side1;
-	int sumax;
+	int maxi;
 	int swap;
 	Pixel* swapp;
 	Triangle* tri; 
+	// straight line
+	double m,p,factor,dist;
 	
+	
+	int xborder = (int)m_width/10;
+	int yborder = (int)m_height/10;
+	
+	// skip too close border to form triangle
+	//printf("\n");
+	// too small
+
+	int n;
+	ptr1 = m_pixels;
+	ptr2 = m_pixels;
+	while(ptr1 != NULL){
+		if  (((ptr1->x) < xborder) || ((ptr1->x) > ((int)m_width-xborder )) ||
+			 ((ptr1->y) < yborder) || ((ptr1->y) > ((int)m_height-yborder))) {
+			n++;	
+			if (ptr1 == m_pixels){
+				m_pixels = ptr1->ptr;
+				free(ptr1);
+				ptr1 = m_pixels;
+				ptr2 = m_pixels;
+			} else {
+				ptr2->ptr = ptr1->ptr;
+				free(ptr1);
+				ptr1 = ptr2->ptr;
+				//ptr2 = ptr2;
+			}
+		} else {
+			ptr2 = ptr1;
+			ptr1 = ptr1->ptr;
+		}
+	}
+	
+	printf("Remove %d point(s)\n",n);
+
+		
+		
 	ptr1 = m_pixels;
 	while(ptr1 != NULL)
 	{	
@@ -658,7 +591,7 @@ Image::compute_triangle()
 		ptr2 = ptr1->ptr;
 		if (ptr2 == NULL) break;
 		base = 0;
-		sumax = 0;
+		maxi = 0;
 		while(ptr2 != NULL)
 		{
 			//if (ptr1 == ptr2) continue;
@@ -672,8 +605,19 @@ Image::compute_triangle()
 		}
 
 		base = (int)sqrt(base);
+		
 		//printf("base=%d (%d,%d)(%d,%d)\n",base,pt1->x,pt1->y,pt2->x,pt2->y);
 		//printf("base OK\n");
+		
+		// straight line:  y = mx + p
+		// mx - y + p = 0
+		m = (double)(pt1->y - pt2->y);
+		m = m/(double)(pt1->x - pt2->x);
+		
+		p = (double)pt1->y - m*(double)pt1->x;
+		
+		// ax + bx + c = 0 : sqrt(a*a+b*b) => sqrt(m*m+1)
+		factor = sqrt(m*m+1.0);
 		ptr3 = m_pixels;
 		while(ptr3 != NULL)
 		{				
@@ -681,17 +625,23 @@ Image::compute_triangle()
 				ptr3 = ptr3->ptr;
 				continue; 
 			}
+			
+			// distance point to straight line
+			dist = m*((double)ptr3->x) - ((double)ptr3->y) + p;
+			if (dist < 0) dist = -1.0*dist;
+			dist = dist/factor;
+			
 			val0 = get_dist2(pt1,ptr3);
 			val1 = get_dist2(pt2,ptr3);
 			val0 = (int)sqrt(val0);
 			val1 = (int)sqrt(val1);
-			sum = val0 + val1;
-			if (120*base > 100*sum) {
-				ptr3 = ptr3->ptr;
-				continue; 
-			}
-			if (sumax < sum){
-				sumax = sum;
+			//sum = val0 + val1;
+			//if (120*base > 100*sum) {
+				//ptr3 = ptr3->ptr;
+				//continue; 
+			//}
+			if (maxi < (int)dist){
+				maxi = (int)dist;
 				pt3 = ptr3;
 				side0 = val0;
 				side1 = val1;				
@@ -704,6 +654,10 @@ Image::compute_triangle()
 				//base = side0;
 				//side0 = swap;
 			//}
+			
+			if (base > maxi*5) continue;  // too close
+			
+			
 			if (m_triangles == NULL) {
 				m_triangles = (Triangle*)malloc(sizeof(Triangle));
 				tri = m_triangles;
@@ -755,42 +709,11 @@ Image::compute_triangle()
 		
 	}
 	
+	
 	//printf("out compute triangle\n");
 }
 
 
-	
-//int
-//Image::compare_triangles(Triangle* other){
-	//Triangle* ptr1;
-	//Triangle* ptr2;
-	//m_reference = NULL;
-	//m_selected = NULL;
-	//ptr1 = other; // reference
-	//ptr2 = m_triangles;
-	//bool match = false;
-	//while((ptr1 != NULL) && (match == false)){
-		//while((ptr2 != NULL) && (match == false)){
-			//if ((abs((ptr1->da)-(ptr2->da)) > DLEN) ||
-			    //(abs((ptr1->db)-(ptr2->db)) > DLEN) ||
-			    //(abs((ptr1->dc)-(ptr2->dc)) > DLEN))
-			//{
-				//ptr2 = ptr2->ptr;
-				//continue;
-			//}
-			//match = true;
-			//m_reference = ptr1;
-			//m_selected = ptr2;
-		//}
-		//ptr1 = ptr1->ptr;
-	//}
-	//if (match == false) return -1;
-	//printf("Mapping:\n");
-	//printf("(%d,%d) -> (%d,%d)\n",m_selected->pa->x,m_selected->pa->y,m_reference->pa->x,m_reference->pa->y);
-	//printf("(%d,%d) -> (%d,%d)\n",m_selected->pb->x,m_selected->pb->y,m_reference->pb->x,m_reference->pb->y);
-	//printf("(%d,%d) -> (%d,%d)\n",m_selected->pc->x,m_selected->pc->y,m_reference->pc->x,m_reference->pc->y);
-	//return 0;
-//}
 
 Pixel*
 Image::search_third_pixel(Pixel* pt1, Pixel* pt2, Triangle* tri)
@@ -826,6 +749,9 @@ Image::compare_triangles(Triangle* other){
 	//Pixel* tmp;
 	tri = other;
 	bool match = false;
+	
+	
+	
 	int dist2;
 
 	Pixel* pt1 = NULL;
@@ -833,7 +759,7 @@ Image::compare_triangles(Triangle* other){
 	Pixel* pt3 = NULL;
 	
 	//int aa;
-
+	m_selected = (Triangle*)malloc(sizeof(Triangle));
 	
 	while (tri != NULL)
 	{
@@ -869,8 +795,28 @@ Image::compare_triangles(Triangle* other){
 						ptr2 = ptr2->ptr;
 						continue;
 					} else {
-						match=true;
-						break;
+						m_reference = tri;
+						m_selected->pa = pt1;
+						m_selected->pb = pt2;
+						m_selected->pc = pt3;
+						m_selected->da = (int)sqrt((double)get_dist2(pt1,pt2));
+						m_selected->db = (int)sqrt((double)get_dist2(pt1,pt3));
+						m_selected->dc = (int)sqrt((double)get_dist2(pt2,pt3));
+						printf("Mapping:\n");
+						printf("(%d,%d) -> (%d,%d)\n",m_selected->pa->x,m_selected->pa->y,m_reference->pa->x,m_reference->pa->y);
+						printf("(%d,%d) -> (%d,%d)\n",m_selected->pb->x,m_selected->pb->y,m_reference->pb->x,m_reference->pb->y);
+						printf("(%d,%d) -> (%d,%d)\n",m_selected->pc->x,m_selected->pc->y,m_reference->pc->x,m_reference->pc->y);
+						if (compute_coeff() == 0){
+							match=true;
+							break;
+						} else {
+							printf(" ... Search another triangle\n");
+							ptr2 = ptr2->ptr;
+							continue;
+						}
+						
+						//break;
+						
 					}
 				}
 			}
@@ -890,54 +836,11 @@ Image::compare_triangles(Triangle* other){
 			match=true;
 			break;
 		}
-		//printf("base :(%d,%d) -> (%d,%d)\n",pt1->x,pt1->y,tri->pa->x,tri->pa->y);
-		//printf("     :(%d,%d) -> (%d,%d)\n",pt2->x,pt2->y,tri->pb->x,tri->pb->y);
-		//// side0 matching	
-		////printf("side0 matching\n");
-		//ptr3 = m_pixels;
-		//dist2 = (tri->db)*(tri->db);
-		//match = false;
-		//while(ptr3 != NULL){
-			//if (abs(dist2-get_dist2(pt1,ptr3)) > DLEN){
-				//ptr3 = ptr3->ptr;
-			//} else {
-				//pt3 = ptr3;
-				//// check
-				//dist2 = (tri->dc)*(tri->dc);
-				//if (abs(dist2-get_dist2(pt2,pt3)) > DLEN){
-					//ptr3 = ptr3->ptr;
-					//continue;
-				//} else {
-					//match = true;
-					//break;
-				//}
-			//}		
-		//}
-		//if (match == false){
-			//tri = tri->ptr; // next triangle
-			//continue;
-		//} else {
-			//break;
-		//}		
 	}
 	if (match == false){
 		printf("No match\n");
 		return -1;
 	} else {
-		m_reference = tri;
-		m_selected = (Triangle*)malloc(sizeof(Triangle));
-		m_selected->pa = pt1;
-		m_selected->pb = pt2;
-		m_selected->pc = pt3;
-		m_selected->da = (int)sqrt((double)get_dist2(pt1,pt2));
-		m_selected->db = (int)sqrt((double)get_dist2(pt1,pt3));
-		m_selected->dc = (int)sqrt((double)get_dist2(pt2,pt3));
-		printf("Mapping:\n");
-		printf("(%d,%d) -> (%d,%d)\n",m_selected->pa->x,m_selected->pa->y,m_reference->pa->x,m_reference->pa->y);
-		printf("(%d,%d) -> (%d,%d)\n",m_selected->pb->x,m_selected->pb->y,m_reference->pb->x,m_reference->pb->y);
-		printf("(%d,%d) -> (%d,%d)\n",m_selected->pc->x,m_selected->pc->y,m_reference->pc->x,m_reference->pc->y);
-		//printf("sel: %d-%d-%d\n",m_selected->da,m_selected->db,m_selected->dc);
-		//printf("ref: %d-%d-%d\n",m_reference->da,m_reference->db,m_reference->dc);
 		return 0;		
 	}
 }
@@ -967,8 +870,6 @@ Image::compute_coeff() {
 	rc = cramer3(m3x3,m3x1,m_xcoeff);
 	if (rc < 0) return -1;
 	
-	printf("x'= %f*x + %f*y + %f\n",m_xcoeff[0],m_xcoeff[1],m_xcoeff[2]);
-	
 	if (m_xcoeff[0] < 0.9) return -1;
 	if (m_xcoeff[0] > 1.1) return -1;
 	
@@ -990,10 +891,13 @@ Image::compute_coeff() {
 	rc = cramer3(m3x3,m3x1,m_ycoeff);
 	if (rc < 0) return -1;
 	
-	printf("y'= %f*x + %f*y + %f\n",m_ycoeff[0],m_ycoeff[1],m_ycoeff[2]);
-	
 	if (m_ycoeff[1] < 0.9) return -1;
 	if (m_ycoeff[1] > 1.1) return -1;
+	
+	printf("x'= %f*x + %f*y + %f\n",m_xcoeff[0],m_xcoeff[1],m_xcoeff[2]);
+	printf("y'= %f*x + %f*y + %f\n",m_ycoeff[0],m_ycoeff[1],m_ycoeff[2]);
+	
+
 	
 	sleep(1);
 	

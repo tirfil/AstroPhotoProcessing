@@ -9,8 +9,8 @@
 #include <math.h>
 
 #define NB_STARS 20
-#define MIN_PIX 5
-#define MAX_PIX 15
+#define MIN_PIX 5+2
+#define MAX_PIX 15+2
 #define DLEN 5
 #define LEVEL 98
 
