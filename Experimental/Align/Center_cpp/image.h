@@ -45,6 +45,8 @@ public:
 	int save_coeff(char* path);
 	int load_coeff(char* path);
 	
+	int test_detect_stars(char* path);
+	
 private:
 
 	long m_width, m_height;

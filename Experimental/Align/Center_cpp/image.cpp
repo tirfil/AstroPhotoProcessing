@@ -124,6 +124,35 @@ Image::write_transform(char* path)
 	return 0;
 }
 
+int
+Image::test_detect_stars(char* path){
+	int nelements;
+	int i;
+	int level;
+	Pixel* ptr1;
+	compute_stat(); // min/max
+	level = get_level(LEVEL);
+	detect_stars(level);
+	nelements = (int)m_width*(int)m_height;
+	m_image2 = (unsigned short*)malloc(sizeof(unsigned short)*nelements);
+	// init
+	for(i=0;i<nelements;i++)
+		if (m_image[i] > level){
+			m_image2[i]=64;
+		} else {
+			m_image2[i]=0;
+		}
+	ptr1 = m_pixels;
+	while (ptr1 != NULL){
+		i = (ptr1->y) * m_width + (ptr1->x);
+		m_image2[i] = 256;
+		ptr1 = ptr1->ptr;
+	}
+	
+	write_fits(path);
+	
+}
+
 // private
 
 
