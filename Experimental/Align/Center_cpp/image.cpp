@@ -30,7 +30,6 @@ Image::Image(char* path) : m_width(0),m_height(0),m_pixels(NULL),m_triangles(NUL
 	m_image(NULL),m_image2(NULL)
 {
 	int rc;
-	int level;
 	rc = read_fits(path);
 	//if (rc==0)
 		//compute_stat(); // min/max
@@ -70,11 +69,10 @@ Image::~Image()
 Triangle* 
 Image::get_reference_triangles()
 {
-	int level;
 	int rc;
 	compute_stat(); // min/max
-	level = get_level(LEVEL);
-	detect_stars(level);
+	get_level(LEVEL);
+	detect_stars();
 	compute_triangle();
 	return m_triangles;
 }
@@ -83,11 +81,10 @@ Image::get_reference_triangles()
 int
 Image::get_coefficients(double* coefficients, Triangle* reference)
 {
-	int level;
 	int rc;
 	compute_stat(); // min/max
-	level = get_level(LEVEL);
-	detect_stars(level);
+	get_level(LEVEL);
+	detect_stars();
 	//compute_triangle();
 	rc = compare_triangles(reference);
 	if (rc < 0 ) return -1;	
@@ -128,17 +125,16 @@ int
 Image::test_detect_stars(char* path){
 	int nelements;
 	int i;
-	int level;
 	Pixel* ptr1;
 	compute_stat(); // min/max
-	level = get_level(LEVEL);
-	detect_stars(level);
+	get_level(LEVEL);
+	detect_stars();
 	nelements = (int)m_width*(int)m_height;
 	//m_image2 = (unsigned short*)malloc(sizeof(unsigned short)*nelements);
 	// init
 	/*
 	for(i=0;i<nelements;i++)
-		if (m_image[i] > level){
+		if (m_image[i] > m_level){
 			m_image2[i]=64;
 		} else {
 			m_image2[i]=0;
@@ -270,6 +266,7 @@ Image::get_level(int percent)
 		//printf("limit=%d - %ld%%\n",limit,100L*score/nelements);
 	}
 	printf("star level=%d\n",limit);
+	m_level = limit;
 	return limit;
 }
 
@@ -340,7 +337,7 @@ Image::correct_pix(Pixel* in, int level)
 	//printf("\r(%d,%d) -> ",x,y);
 	i = y*(int)m_width+x;
 	us = m_image[i];
-	while(us > level){
+	while(us > m_level){
 		if (x>0){
 			x--;
 			i = y*(int)m_width+x;
@@ -353,7 +350,7 @@ Image::correct_pix(Pixel* in, int level)
 	x = in->x;
 	i = y*(int)m_width+x;
 	us = m_image[i];
-	while(us > level){
+	while(us > m_level){
 		if (x<(m_width-1)){
 			x++;
 			i = y*(int)m_width+x;
@@ -370,7 +367,7 @@ Image::correct_pix(Pixel* in, int level)
 	y = in->y;
 	i = y*(int)m_width+x;
 	us = m_image[i];
-	while(us > level){
+	while(us > m_level){
 		if (y>0){
 			y--;
 			i = y*(int)m_width+x;
@@ -383,7 +380,7 @@ Image::correct_pix(Pixel* in, int level)
 	y = in->y;
 	i = y*(int)m_width+x;
 	us = m_image[i];
-	while(us > level){
+	while(us > m_level){
 		if (y<(m_height-1)){
 			y++;
 			i = y*(int)m_width+x;
@@ -632,7 +629,7 @@ Image::recenter_pix(Pixel* in, unsigned short* mask)
 }
 
 int
-Image::detect_stars(int level)
+Image::detect_stars()
 {
 	Pixel* root;
 	Pixel* curr;
@@ -661,13 +658,13 @@ Image::detect_stars(int level)
 		for(int x=1;x<(int)m_width-1;x++){	
 			i = y*(int)m_width+x;
 			us = m_image[i];
-			if (us > level)
+			if (us > m_level)
 			{
 				match = true;
 				for(int y0=y-1;y0<=y+1;y0++){
 					for(int x0=x-1;x0<=x+1;x0++){
 						us0 = m_image[y0*(int)m_width+x0];
-						if (us0 <= level ) {
+						if (us0 <= m_level ) {
 							match = false;
 							break;
 						}
@@ -685,13 +682,13 @@ Image::detect_stars(int level)
 		for(int x=1;x<(int)m_width-1;x++){
 			i = y*(int)m_width+x;
 			us = m_image[i];
-			if ((mask[i]>0)&&(us > level))
+			if ((mask[i]>0)&&(us > m_level))
 			{
 				match = true;
 				for(int y0=y-1;y0<=y+1;y0++){
 					for(int x0=x-1;x0<=x+1;x0++){
 						us0 = m_image[y0*(int)m_width+x0];
-						if ((us0 > us) || (us0 < level))
+						if ((us0 > us) || (us0 < m_level))
 						{
 							match = false;
 							break;
@@ -810,7 +807,7 @@ Image::compute_triangle()
 	//printf("\n");
 	// too small
 
-	int n;
+	int n=0;
 	ptr1 = m_pixels;
 	ptr2 = m_pixels;
 	while(ptr1 != NULL){

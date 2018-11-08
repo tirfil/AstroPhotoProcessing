@@ -53,19 +53,19 @@ private:
 	int m_mini, m_maxi;
 	unsigned short* m_image;
 	unsigned short* m_image2;
-	//unsigned short* m_stars;
 	Pixel* m_pixels;
 	Triangle* m_triangles;
 	Triangle* m_reference;
 	Triangle* m_selected;
 	double m_xcoeff[3];
 	double m_ycoeff[3];
+	int m_level;
 
 	int read_fits(char* path);
 	int write_fits(char* path);
 	int compute_stat();
 	int get_level(int percent);
-	int detect_stars(int level);
+	int detect_stars();
 	int recenter_pix(Pixel* in, unsigned short* mask);
 	int correct_pix(Pixel* in, int level);
 	//int select_stars(int size);
