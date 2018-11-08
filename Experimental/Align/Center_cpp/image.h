@@ -8,7 +8,7 @@
 #include <limits.h>
 #include <math.h>
 
-#define NB_STARS 20
+#define D2MAX 2500
 #define MIN_PIX 5+2
 #define MAX_PIX 15+2
 #define DLEN 5
@@ -66,6 +66,7 @@ private:
 	int compute_stat();
 	int get_level(int percent);
 	int detect_stars(int level);
+	int recenter_pix(Pixel* in, unsigned short* mask);
 	int correct_pix(Pixel* in, int level);
 	//int select_stars(int size);
 	int compute_triangle();

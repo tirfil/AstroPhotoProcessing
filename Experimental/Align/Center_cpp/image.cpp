@@ -134,25 +134,26 @@ Image::test_detect_stars(char* path){
 	level = get_level(LEVEL);
 	detect_stars(level);
 	nelements = (int)m_width*(int)m_height;
-	m_image2 = (unsigned short*)malloc(sizeof(unsigned short)*nelements);
+	//m_image2 = (unsigned short*)malloc(sizeof(unsigned short)*nelements);
 	// init
+	/*
 	for(i=0;i<nelements;i++)
 		if (m_image[i] > level){
 			m_image2[i]=64;
 		} else {
 			m_image2[i]=0;
 		}
+		*/
 	ptr1 = m_pixels;
 	while (ptr1 != NULL){
 		i = (ptr1->y) * m_width + (ptr1->x);
-		m_image2[i] = 256;
+		m_image2[i] = 1023;
 		ptr1 = ptr1->ptr;
 	}
 	
 	write_fits(path);
 	
 }
-
 // private
 
 
@@ -407,6 +408,229 @@ Image::correct_pix(Pixel* in, int level)
 	
 }
 
+//int
+//Image::detect_stars(int level)
+//{
+	//Pixel* root;
+	//Pixel* curr;
+	//unsigned short us;
+	//unsigned short us0;
+	//Pixel* ptr1;
+	//Pixel* ptr2;
+	//Pixel* prev;
+	
+	//bool match;
+	//int i;
+	//int n=0;
+	//root = NULL;
+	//curr = NULL;
+
+
+	//for (int y=1;y<(int)m_height-1;y++){
+		//for(int x=1;x<(int)m_width-1;x++){
+			//i = y*(int)m_width+x;
+			//us = m_image[i];
+			//if (us > level)
+			//{
+				//match = true;
+				//for(int y0=y-1;y0<=y+1;y0++){
+					//for(int x0=x-1;x0<=x+1;x0++){
+						//us0 = m_image[y0*(int)m_width+x0];
+						//if ((us0 > us) || (us0 < level))
+						//{
+							//match = false;
+							//break;
+						//}
+					//}
+					//if (match == false) break;
+				//}
+				//if (match == true)
+				//{
+					//if (root == NULL){
+						//curr = (Pixel*)malloc(sizeof(Pixel));
+						//root = curr;
+					//} else {
+						//curr->ptr = (Pixel*)malloc(sizeof(Pixel));
+						//curr = curr->ptr;
+					//}
+					//curr->x = x;
+					//curr->y = y;
+					//curr->ptr = NULL;
+					//n++;
+					////printf("\r(%d,%d) %d",x,y,n);
+				//}
+			//}	
+		//}	
+	//}
+	//printf("\ndetect %d raw point(s)\n",n);
+	
+	//// correct
+	////printf("-");
+	//curr = root;
+	//while(curr != NULL){
+		//correct_pix(curr,level);
+		//correct_pix(curr,level);
+		//correct_pix(curr,level);
+		//curr = curr->ptr;
+	//}
+	////printf("\n");
+	//// too small
+	//curr = root;
+	//prev = root;
+	//while(curr != NULL){
+		//if ((curr->z < MIN_PIX)||(curr->z > MAX_PIX)){
+			//n--;
+			//if (prev == root){
+				//root = curr->ptr;
+				//free(curr);
+				//curr = root;
+				//prev = root;
+			//} else {
+				//prev->ptr = curr->ptr;
+				//free(curr);
+				//curr = prev->ptr;
+				////prev = prev;
+			//}
+		//} else {
+			//prev = curr;
+			//curr = curr->ptr;
+		//}
+	//}
+	
+	//printf("\ndetect %d point(s)\n",n);	
+	
+	//// clean
+	////printf("-");
+	//ptr1 = root;
+	//while(ptr1 != NULL){
+		//prev = ptr1;
+		//ptr2 = ptr1->ptr;
+		//while(ptr2 != NULL){
+			//if (get_dist2(ptr1,ptr2) < 2){
+				//// remove 
+				//prev->ptr = ptr2->ptr;
+				//free(ptr2);
+				//ptr2 = prev->ptr;
+				//n--;
+				////printf("\r%d",n);
+			//} else {
+				//prev = ptr2;
+				//ptr2 = ptr2->ptr;
+			//}
+		//}
+		//ptr1 = ptr1->ptr;
+	//}
+	//printf("\ndetect %d point(s)\n",n);	
+
+	//// sort bigger first
+	//do {
+		//ptr1 = root;
+		//n = 0;
+		//while(ptr1 != NULL){
+			//ptr2 = ptr1->ptr;
+			//if (ptr2 == NULL) break;
+			//if ((ptr2->z) > (ptr1->z)){
+				//n++;
+				//ptr1->ptr = ptr2->ptr;
+				//ptr2->ptr = ptr1;
+				//if (ptr1 == root){			
+					//root = ptr2;
+				//} else {
+					//prev->ptr = ptr2;
+				//}
+				//prev = ptr2;
+			//} else {
+				//prev = ptr1;
+				//ptr1 = ptr1->ptr;
+			//}
+		//}
+	//} while (n>0);
+
+	//m_pixels = root;
+	////debug();
+//}
+
+int 
+Image::recenter_pix(Pixel* in, unsigned short* mask)
+{
+	int i;
+	int x,y;
+	unsigned short us;
+	int xmin, xmax, ymin, ymax;
+	int dx,dy;
+	x = in->x;
+	y = in->y;
+	
+	i = y*(int)m_width+x;
+	us = mask[i];
+	while(us > 0){
+		if (x>0){
+			x--;
+			i = y*(int)m_width+x;
+			us = mask[i];
+		} else {
+			break;
+		}
+	}
+	xmin = x;
+	x = in->x;
+	i = y*(int)m_width+x;
+	us = mask[i];
+	while(us > 0){
+		if (x<(m_width-1)){
+			x++;
+			i = y*(int)m_width+x;
+			us = mask[i];
+		} else {
+			break;
+		}			
+	}
+	xmax = x;
+	
+	in->x = (xmax+xmin)/2;
+	
+	x = in->x;
+	y = in->y;
+	i = y*(int)m_width+x;
+	us = mask[i];
+	while(us > 0){
+		if (y>0){
+			y--;
+			i = y*(int)m_width+x;
+			us = mask[i];
+		} else {
+			break;
+		}
+	}
+	ymin = y;
+	y = in->y;
+	i = y*(int)m_width+x;
+	us = mask[i];
+	while(us > 0){
+		if (y<(m_height-1)){
+			y++;
+			i = y*(int)m_width+x;
+			us = mask[i];
+		} else {
+			break;
+		}			
+	}
+	ymax = y;	
+	in->y = (ymax+ymin)/2;
+	//printf("(%d,%d)",in->x,in->y);
+	// diameter min
+	dx = xmax-xmin;
+	dy = ymax-ymin;
+	if (dx > dy)
+		in->z = dy;
+	else
+		in->z = dx;
+		
+		
+	//printf("(%d,%d) %d\n",in->x,in->y,in->z);
+	
+}
+
 int
 Image::detect_stars(int level)
 {
@@ -423,13 +647,45 @@ Image::detect_stars(int level)
 	int n=0;
 	root = NULL;
 	curr = NULL;
-
+	
+	
+	int nelements;
+	unsigned short* mask;
+	
+	nelements = (int)m_width*(int)m_height;
+	mask = (unsigned short*)malloc(sizeof(unsigned short)*nelements);
+	
+	for(i=0;i<nelements;i++) mask[i]=0;
+	
+	for (int y=1;y<(int)m_height-1;y++){
+		for(int x=1;x<(int)m_width-1;x++){	
+			i = y*(int)m_width+x;
+			us = m_image[i];
+			if (us > level)
+			{
+				match = true;
+				for(int y0=y-1;y0<=y+1;y0++){
+					for(int x0=x-1;x0<=x+1;x0++){
+						us0 = m_image[y0*(int)m_width+x0];
+						if (us0 <= level ) {
+							match = false;
+							break;
+						}
+					}
+					if (match == false) break;
+				}
+				if (match == true) mask[i]=255;
+			}	
+		}
+	}
+	
+	//m_image2 = mask;
 
 	for (int y=1;y<(int)m_height-1;y++){
 		for(int x=1;x<(int)m_width-1;x++){
 			i = y*(int)m_width+x;
 			us = m_image[i];
-			if (us > level)
+			if ((mask[i]>0)&&(us > level))
 			{
 				match = true;
 				for(int y0=y-1;y0<=y+1;y0++){
@@ -463,41 +719,14 @@ Image::detect_stars(int level)
 	}
 	printf("\ndetect %d raw point(s)\n",n);
 	
-	// correct
-	//printf("-");
 	curr = root;
 	while(curr != NULL){
-		correct_pix(curr,level);
-		correct_pix(curr,level);
-		correct_pix(curr,level);
+		//for(int k=0; k<10; k++)
+		recenter_pix(curr,mask);
 		curr = curr->ptr;
-	}
-	//printf("\n");
-	// too small
-	curr = root;
-	prev = root;
-	while(curr != NULL){
-		if ((curr->z < MIN_PIX)||(curr->z > MAX_PIX)){
-			n--;
-			if (prev == root){
-				root = curr->ptr;
-				free(curr);
-				curr = root;
-				prev = root;
-			} else {
-				prev->ptr = curr->ptr;
-				free(curr);
-				curr = prev->ptr;
-				//prev = prev;
-			}
-		} else {
-			prev = curr;
-			curr = curr->ptr;
-		}
-	}
+	}	
 	
-	printf("\ndetect %d point(s)\n",n);	
-	
+
 	// clean
 	//printf("-");
 	ptr1 = root;
@@ -505,7 +734,7 @@ Image::detect_stars(int level)
 		prev = ptr1;
 		ptr2 = ptr1->ptr;
 		while(ptr2 != NULL){
-			if (get_dist2(ptr1,ptr2) < 2){
+			if (get_dist2(ptr1,ptr2) < D2MAX){
 				// remove 
 				prev->ptr = ptr2->ptr;
 				free(ptr2);
@@ -520,6 +749,7 @@ Image::detect_stars(int level)
 		ptr1 = ptr1->ptr;
 	}
 	printf("\ndetect %d point(s)\n",n);	
+
 
 	// sort bigger first
 	do {
@@ -546,7 +776,9 @@ Image::detect_stars(int level)
 	} while (n>0);
 
 	m_pixels = root;
-	//debug();
+	
+	free(mask);
+	
 }
 
 int	

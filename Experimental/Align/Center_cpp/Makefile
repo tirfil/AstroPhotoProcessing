@@ -1,12 +1,10 @@
-
-
 CC = g++
 CFLAGS = -fpermissive 
 LDFLAGS =  
 LIB = -lcfitsio
 
 TARGET = center
-SRCS = $(TARGET).cpp image.cpp
+SRCS = $(TARGET).cpp image.cpp image.h
 OBJS = $(SRCS:.cpp=.o)
  
 
@@ -15,3 +13,7 @@ $(TARGET): $(OBJS)
 
 .cpp.o:
 	$(CC) $(CFLAGS) -c $< 
+
+
+
+
