@@ -1128,10 +1128,13 @@ Image::compute_coeff() {
 	rc = cramer3(m3x3,m3x1,m_xcoeff);
 	if (rc < 0) return -1;
 	
-	if (m_xcoeff[0] < 0.9) return -1;
-	if (m_xcoeff[0] > 1.1) return -1;
-	if (m_xcoeff[1] < -0.1) return -1;
-	if (m_xcoeff[1] > 0.1) return -1;
+	if (fabs(1.0 - m_xcoeff[0])	> PRECISION) return -1;
+	if (fabs(m_xcoeff[1]) 		> PRECISION) return -1;
+	
+	//if (m_xcoeff[0] < 0.9) return -1;
+	//if (m_xcoeff[0] > 1.1) return -1;
+	//if (m_xcoeff[1] < -0.1) return -1;
+	//if (m_xcoeff[1] > 0.1) return -1;
 	
 	//m3x3[0]=m_selected->pa->x;
 	//m3x3[1]=m_selected->pa->y;
@@ -1151,10 +1154,13 @@ Image::compute_coeff() {
 	rc = cramer3(m3x3,m3x1,m_ycoeff);
 	if (rc < 0) return -1;
 	
-	if (m_ycoeff[1] < 0.9) return -1;
-	if (m_ycoeff[1] > 1.1) return -1;
-	if (m_ycoeff[0] < -0.1) return -1;
-	if (m_ycoeff[0] > 0.1) return -1;
+	if (fabs(1.0 - m_ycoeff[1]) > PRECISION) return -1;
+	if (fabs(m_ycoeff[0]) 		> PRECISION) return -1;
+	
+	//if (m_ycoeff[1] < 0.9) return -1;
+	//if (m_ycoeff[1] > 1.1) return -1;
+	//if (m_ycoeff[0] < -0.1) return -1;
+	//if (m_ycoeff[0] > 0.1) return -1;
 	
 	printf("x'= %f*x + %f*y + %f\n",m_xcoeff[0],m_xcoeff[1],m_xcoeff[2]);
 	printf("y'= %f*x + %f*y + %f\n",m_ycoeff[0],m_ycoeff[1],m_ycoeff[2]);

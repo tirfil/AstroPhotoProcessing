@@ -13,6 +13,7 @@
 #define MAX_PIX 15+2
 #define DLEN 5
 #define LEVEL 98
+#define PRECISION 0.01
 
 typedef struct Pixel {
 	int x;
