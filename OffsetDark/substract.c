@@ -73,6 +73,8 @@ int main(int argc, char* argv[]) {
 	unsigned short maxi = 0;
 	unsigned short delta;
 	
+	int* temp;
+	
 	if (argc != 4){
 		printf("Usage: %s <raw> <offset or dark> <result>\n",argv[0]);
 		return -1;
@@ -81,18 +83,33 @@ int main(int argc, char* argv[]) {
 	if (read_fits(argv[1],&a) == 0){
 		if (read_fits(argv[2],&b) == 0){	
 			nelements = width*height;
+			temp = malloc(sizeof(int)*nelements);
 			c = malloc(sizeof(unsigned short)*nelements);
 			for(i=0;i<nelements;i++){
-				if (a[i] >= b[i])
-					c[i] = a[i] - b[i];
-				else {
-					c[i] = 0;
+				temp[i]= (int)a[i] - (int)b[i];
+				if (temp[i] < 0){
 					delta = b[i] - a[i];
 					if (delta > maxi) maxi = delta;
 					errors++;
 				}
+				//if (a[i] >= b[i])
+					//c[i] = a[i] - b[i];
+				//else {
+					//c[i] = 0;
+					//delta = b[i] - a[i];
+					//if (delta > maxi) maxi = delta;
+					//errors++;
+				//}
 			}
 			printf("%d errors : maxi =%d\n",errors,maxi);
+			for(i=0;i<nelements;i++){
+				temp[i] += maxi;
+			}
+			for(i=0;i<nelements;i++){
+				c[i] = (unsigned short)temp[i];
+			}
+			
+			free(temp);
 			
 			remove(argv[3]);
 			if (write_fits(argv[3],c) == 0){

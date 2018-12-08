@@ -1177,15 +1177,17 @@ int
 Image::translate()
 {	
 	int nelements;
-	int i;
+	int i,n, sum;
 	int x,y;
 	int u,v;
+	int* temp;
 	
 	nelements = (int)m_width*(int)m_height;
 	m_image2 = (unsigned short*)malloc(sizeof(unsigned short)*nelements);
+	temp = (int*)malloc(sizeof(sizeof(int))*nelements);
 	// init
 	for(i=0;i<nelements;i++)
-		m_image2[i]=0;
+		temp[i]=-1;
 	// convert
 	for(y=0;y<m_height;y++)
 	for(x=0;x<m_width;x++){
@@ -1193,8 +1195,34 @@ Image::translate()
 		if (u<0 || u>=m_width) continue;
 		v = floor(0.5+m_ycoeff[0]*(double)x+m_ycoeff[1]*(double)y+m_ycoeff[2]);
 		if (v<0 || v>=m_height) continue;
-		m_image2[u+v*m_width]=m_image[x+y*m_width];
+		temp[u+v*m_width]=(int)m_image[x+y*m_width];
 	}
+	// extrapolation
+	for(y=0;y<m_height;y++)
+	for(x=0;x<m_width;x++){
+		i = temp[x+y*m_width];
+		if (i < 0) {
+			n = 0;
+			sum = 0;
+			for(v=y-1;v<=y+1;v++)
+			for(u=x-1;u<=x+1;u++){
+				if ((u<0) || (v<0) || (u>=m_width) || (v>=m_height)) continue;
+				i = temp[u+v*m_width];
+				if (i>0) {
+					sum += temp[u+v*m_width];
+					n++;
+				}
+			}
+			if (n > 0) temp[x+y*m_width] = sum/n;
+				else temp[x+y*m_width] = 0;
+		}
+	}	
+	for(i=0;i<nelements;i++) 
+		m_image2[i] = (unsigned short)temp[i];
+	
+	free(temp);
+	
+	
 	return 0;
 }
 
