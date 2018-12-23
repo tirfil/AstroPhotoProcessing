@@ -32,6 +32,13 @@ typedef struct Triangle {
 	struct Triangle* ptr;
 } Triangle;
 
+typedef struct Pair {
+	int x0;
+	int y0;
+	int x1;
+	int y1;
+} Pair;
+
 class Image 
 {
 public:
@@ -69,6 +76,9 @@ private:
 	int detect_stars();
 	int recenter_pix(Pixel* in, unsigned short* mask);
 	int correct_pix(Pixel* in, int level);
+	int detect_stars2();
+	Pair rectangle(Pixel* in, unsigned short* mask);
+	int psf(Pixel* out, Pair p);
 	//int select_stars(int size);
 	int compute_triangle();
 	int compare_triangles(Triangle* other);
