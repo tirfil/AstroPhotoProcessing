@@ -7,8 +7,8 @@
 #include "fitsio.h"
 
 
-#define RADIUS 5
-#define MULT 1
+#define RADIUS 2
+#define MULT 2
 
 struct ushort_node {
 	unsigned short 		value;
@@ -134,7 +134,8 @@ int main(int argc, char* argv[]) {
 			
 		for(i=0; i < nelements; i++)
 		{
-			n = 2*in[i] - lowpass[i]*MULT;
+			n = (in[i] - lowpass[i])*MULT;
+			n += in[i];
 			if (n>0) 
 				out[i]=n;
 			else 
