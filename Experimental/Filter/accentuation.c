@@ -8,7 +8,7 @@
 
 
 #define RADIUS 2
-#define MULT 2
+#define MULT 5
 
 struct ushort_node {
 	unsigned short 		value;
