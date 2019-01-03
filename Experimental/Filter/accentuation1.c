@@ -4,15 +4,18 @@
 #include <string.h>
 #include <stdarg.h>
 #include <dirent.h>
-#include <math.h>
 #include "fitsio.h"
 
-#define M_PI 3.14159265358979323846
 
 #define RADIUS 2
-#define MULT 2
-#define RHO 1.2
+#define MULT 5
 
+struct ushort_node {
+	unsigned short 		value;
+	struct ushort_node 	*next;
+};
+
+typedef struct ushort_node ushort_node;
 
 long width=0;
 long height=0;
@@ -81,48 +84,27 @@ int testxy(int x,int y)
 	return 0;
 }
 
-int create_gauss_filter(double* filter, int size)
-{
-	double div1;
-	double div2;
-	int x,y;
-	int i;
-	double sum;
-	
-	sum = 0.0;
-	
-	div2 = 2.0*RHO*RHO;
-	div1 = div2 * M_PI;
-	
-	i=0;
-	
-	for (y=-size;y<=size;y++)
-		for (x=-size;x<=size;x++){
-			filter[i] = exp(-1.0*(x*x+y*y)/div2)/div1;
-			printf("g(%d,%d) =\t%f\n",x,y,filter[i]);
-			sum += filter[i];
-			i++;
-		}
-		
-	printf("sum=%f\n",sum); 
-		
-	return 0;
-	
-}
-
 
 int main(int argc, char* argv[]) {
 	unsigned short* in;
 	unsigned short* lowpass;
 	unsigned short* out;
 	long nelements;
-	int i;
+	int i,n;
+	int sum;
 	int x,y;
-	int dx,dy;
-	int index;
-	//int x0,y0;
-	double* filter;
-	double sum,n,value;
+	int x0,y0;
+
+	
+	unsigned short result;
+	
+	ushort_node* root;
+	ushort_node* item;
+	ushort_node* tmp;
+	ushort_node* tmp2;
+	int stop;	
+	
+	int debug = 0;
 
 	if (argc != 3){
 		printf("Usage: %s <in> <out> \n",argv[0]);
@@ -131,29 +113,24 @@ int main(int argc, char* argv[]) {
 	
 	if (read_fits(argv[1],&in) == 0){
 		nelements = width*height;
-		filter = malloc(sizeof(double)*(2*RADIUS+1)*(2*RADIUS+1));
-		
-		create_gauss_filter(filter,RADIUS);
-		
-		
 		out = malloc(sizeof(unsigned short)*nelements);
+		
 		lowpass = malloc(sizeof(unsigned short)*nelements);
 		
 		for(y=0;y< height;y++)
 			for(x=0;x < width;x++){
-				n = 0.0;
-				sum = 0.0;
-				for(dy=-RADIUS;dy<=RADIUS;dy++)
-					for(dx=-RADIUS;dx<=RADIUS;dx++){
-						if (testxy(x+dx,y+dy) < 0) continue;
-						index = dx+RADIUS+(dy+RADIUS)*(2*RADIUS+1);
-						value = filter[index];
-						sum += value*(double)in[x+dx+(y+dy)*width];
-						n += value;
+				n=0;
+				sum = 0;
+				for (y0=y-RADIUS; y0 <= y+RADIUS; y0++)
+					for (x0=x-RADIUS; x0 <= x+RADIUS; x0++)
+					{
+						if (testxy(x0,y0) < 0) continue;
+						n++;
+						sum += in[x0+y0*width];
 					}
-				if (n>0.0) lowpass[x+y*width] = (int)floor(sum/n+0.5);
+				if (n>0) lowpass[x+y*width] = sum/n;
 			}
-		
+			
 			
 		for(i=0; i < nelements; i++)
 		{
@@ -165,8 +142,64 @@ int main(int argc, char* argv[]) {
 				out[i]=0;
 		}
 		
+		
+				
+				
+				//root = NULL;
+				////if (x==100 && y==100) debug=1; else debug=0;
+				//for(yy=y-1;yy<=y+1;yy++)
+					//for(xx=x-1;xx<=x+1;xx++)
+					//{
+						////if (debug) printf("-> %d\n",in[xx+yy*width]);
+						//item = malloc(sizeof(ushort_node));
+						//item->value = in[xx+yy*width];
+						//item->next = NULL;
+						//// insert and sort
+						//if (root == NULL){
+							//root=item;
+						//} else {
+							//tmp = root;
+							//tmp2 = NULL;
+							//stop = 0;
+							//do {
+								//if (item->value >= tmp->value){
+									//if (tmp->next != NULL){
+										//// next
+										//tmp2 = tmp;
+										//tmp = tmp->next;
+									//} else {
+										//// append at end
+										//tmp->next = item;
+										//stop = 1;
+									//}
+								//} else {
+									//// insert
+									//item->next = tmp;
+									//if (tmp2 == NULL){
+										//// at start
+										//root = item;
+									//} else {
+										//tmp2->next = item;
+									//}
+									//stop = 1;
+								//}
+						
+							//} while (stop == 0);	
+						//}			
+					//}
+				//tmp = root;
+				//for(i=0;i<9;i++){
+				////if (debug) printf("%d -> %d\n",i,tmp->value);
+				//// take median item
+				//if (i == 4) out[x+y*width] = tmp->value;
+				//tmp2 = tmp;
+				//tmp = tmp->next;
+				//// free ushort_node struct
+				//free(tmp2);
+				//}
 
-	}
+			//}
+			}
 		remove(argv[2]);
 		if (write_fits(argv[2],out) != 0){
 			printf("write_fits error\n");
