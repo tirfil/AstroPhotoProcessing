@@ -146,13 +146,18 @@ int main(int argc, char* argv[]) {
 				for(dy=-RADIUS;dy<=RADIUS;dy++)
 					for(dx=-RADIUS;dx<=RADIUS;dx++){
 						if (testxy(x+dx,y+dy) < 0) continue;
-						index = dx+RADIUS+(dy+RADIUS)*(2*RADIUS+1);
+						index = dx+RADIUS +(dy+RADIUS)*(2*RADIUS+1);
 						value = filter[index];
 						sum += value*(double)in[x+dx+(y+dy)*width];
 						n += value;
 					}
-				if (n>0.0) lowpass[x+y*width] = (int)floor(sum/n+0.5);
+				if (n>0.0) 
+					lowpass[x+y*width] = (int)floor(sum/n+0.5);
+				else
+					lowpass[x+y*width] = 0;
 			}
+			
+		free(filter);
 		
 			
 		for(i=0; i < nelements; i++)
