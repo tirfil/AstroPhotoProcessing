@@ -4,7 +4,7 @@
 
 2) Create pgm file (portable gray map)
 
-dcraw -D -4 <file>.cr2 
+dcraw -d -4 <file>.cr2 
 
 pgm file contains the bayer matrix.
 
