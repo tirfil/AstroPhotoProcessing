@@ -12,4 +12,13 @@ pgm file contains the bayer matrix.
 
 ./pgm2fits <file>.pgm <file>.fits
 
+=====================
+
+bayer2abcd: color map 
+
+colorc = red
+colora = colord = green
+colorb = blue
+
+=====================
  
