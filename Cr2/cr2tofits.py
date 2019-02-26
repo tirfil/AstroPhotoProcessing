@@ -23,7 +23,7 @@ def convert(directory):
 				base,ext = os.path.splitext(name)
 				if (ext != ".pgm"):
 					source = root + os.sep + name
-					cmd = "dcraw -d -4 %s" % source
+					cmd = "dcraw -t 0 -d -4 %s" % source
 					os.system(cmd)
 					source = root + os.sep + base + ".pgm"
 					target = directory + os.sep + base + ".fits"	

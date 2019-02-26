@@ -5,6 +5,9 @@
 #include "fitsio.h"
 #include "tiffio.h"
 
+
+#define PER1000 998
+
 long width=0;
 long height=0;
 
@@ -47,6 +50,55 @@ int read_fits(char* path, unsigned short** image)
      return -1;		
 }
 
+int scaling(unsigned short** a, int nelements, int per1000)
+{
+	int mini, maxi;
+	int i,j;
+	int low, high;
+	int limit;
+	long score;
+	
+	mini = USHRT_MAX;
+	maxi = 0;
+	
+	for(i=0; i< nelements; i++){
+		if ((*a)[i] > maxi) maxi = (*a)[i];
+		if ((*a)[i] < mini) mini = (*a)[i];
+	}
+	
+	printf("mini %d maxi %d\n",mini,maxi);
+	
+	// compute level (iteration)
+	high = maxi;
+	low = mini;
+	
+	for(i=0; i<16; i++){
+		score = 0L;
+		limit = (high + low)/2;
+		
+		for (j=0;j<nelements;j++){
+			if ((*a)[j] < limit) score++;
+		}
+		//printf("score=%ld\n",score);
+		if ((1000L*score/(long)nelements) == (long)per1000) {
+			printf("limit=%d - %ld%%°\n",limit,1000L*score/(long)nelements);
+			break;
+		}
+		if ((1000L*score/(long)nelements) > (long)per1000) 
+		{
+			high = limit;
+		} else {
+			low = limit;
+		}
+		printf("limit=%d - %ld%%°\n",limit,1000L*score/(long)nelements);
+	}	
+	
+	// 
+	for(i=0; i< nelements; i++)
+		if ((*a)[i] > limit) (*a)[i] = limit;
+	
+}
+
 int main(int argc, char* argv[]) {
 	int i;
 	unsigned short* r;
@@ -77,6 +129,12 @@ int main(int argc, char* argv[]) {
 	
 	nelements = (int)width*(int)height;
 	
+	//printf("%d\n",__LINE__);
+	scaling(&r,nelements,PER1000);
+	scaling(&g,nelements,PER1000);
+	scaling(&b,nelements,PER1000);
+
+	
 	for (i=0;i <nelements; i++)
 	{
 		if (r[i] > maxi) maxi = r[i];
@@ -96,6 +154,9 @@ int main(int argc, char* argv[]) {
 		b[i] = (unsigned short)floor(factor*(double)b[i]+0.5);
 	}
 	
+	/*
+
+	*/
 	
 	linewords = sampleperpixel * (int)width;
 	
@@ -103,17 +164,7 @@ int main(int argc, char* argv[]) {
 	tiff = malloc(sizeof(unsigned char)*nelements*sampleperpixel*2);
 	
 	
-	//printf("tiff = 0x%08x\n",tiff);
-/*
-	for (i=0; i < nelements; i++){
-		tiff[6*i+1] = (unsigned char)(r[i] & 0x00ff);
-		tiff[6*i+3] = (unsigned char)(g[i] & 0x00ff);
-		tiff[6*i+5] = (unsigned char)(b[i] & 0x00ff);
-		tiff[6*i+0] = (unsigned char)(r[i] >> 8);
-		tiff[6*i+2] = (unsigned char)(g[i] >> 8);
-		tiff[6*i+4] = (unsigned char)(b[i] >> 8);
-	}
-*/
+
 	for (i=0; i < nelements; i++){
 		tiff[6*i+0] = (unsigned char)(r[i] & 0x00ff);
 		tiff[6*i+2] = (unsigned char)(g[i] & 0x00ff);
