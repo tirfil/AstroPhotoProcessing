@@ -8,6 +8,8 @@
 #include <limits.h>
 #include <math.h>
 
+#define PSF
+
 #define D2MAX 2500
 #define MIN_PIX 5+2
 #define MAX_PIX 15+2
@@ -32,12 +34,14 @@ typedef struct Triangle {
 	struct Triangle* ptr;
 } Triangle;
 
+#ifdef PSF
 typedef struct Pair {
 	int x0;
 	int y0;
 	int x1;
 	int y1;
 } Pair;
+#endif
 
 class Image 
 {
@@ -76,9 +80,11 @@ private:
 	int detect_stars();
 	int recenter_pix(Pixel* in, unsigned short* mask);
 	int correct_pix(Pixel* in, int level);
+#ifdef PSF
 	int detect_stars2();
 	Pair rectangle(Pixel* in, unsigned short* mask);
 	int psf(Pixel* out, Pair p);
+#endif
 	//int select_stars(int size);
 	int compute_triangle();
 	int compare_triangles(Triangle* other);
