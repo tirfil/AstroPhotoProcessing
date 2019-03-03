@@ -161,7 +161,10 @@ for root, dirs, files in os.walk(w(start)):
 			os.system(cmd)
 			if os.path.isfile(w("coeff.dat")):
 				for color in ["red","green","blue"]:
-					directory1 = color
+					if os.path.isdir(w("fmd")):
+						directory1 = color + "1"
+					else:
+						directory1 = color
 					directory2 = color + "2"
 					source = w(directory1) + os.sep + name
 					target = w(directory2) + os.sep + name
