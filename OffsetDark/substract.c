@@ -102,9 +102,19 @@ int main(int argc, char* argv[]) {
 				//}
 			}
 			printf("%d errors : maxi =%d\n",errors,maxi);
+			
+			// offset
+			//for(i=0;i<nelements;i++){
+				//temp[i] += maxi;
+				//if (temp[i] > 65535) temp[i] = 65535;
+			//}
+			
+			// clipping
 			for(i=0;i<nelements;i++){
-				temp[i] += maxi;
+				if ( temp[i] < 0 ) temp[i]=0;
 			}
+			
+			
 			for(i=0;i<nelements;i++){
 				c[i] = (unsigned short)temp[i];
 			}

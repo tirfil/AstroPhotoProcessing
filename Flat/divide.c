@@ -64,6 +64,37 @@ int write_fits(char* path,unsigned short* image)
 	fits_close_file(fptrout, &status);
 }
 
+unsigned short median(unsigned short* im, int size){
+	int i,n;
+	unsigned short mini, maxi, guest;
+	int count;
+	mini = 65535;
+	maxi = 0;
+
+	for (i=0; i<size; i++) {
+		maxi = (im[i] > maxi) ? im[i] : maxi;
+		mini = (im[i] < mini) ? im[i] : mini;
+	}
+	
+	for(n=0; n<8; n++) {
+		guest = (mini/2 + maxi/2);
+		count = 0;
+		for (i=0; i<size; i++) {
+			if (im[i] < guest) count++;
+		}
+		count = count * 100 / size;
+		if ( count < 50 ) {
+			mini = guest;
+			guest = maxi/2 + guest/2;
+		} else {
+			maxi = guest;
+			guest = guest/2 + mini/2;
+		}
+	}
+	printf("count=%d\n",count);
+	return guest;
+}
+
 int main(int argc, char* argv[]) {
 	unsigned short* a;
 	unsigned short* b;
@@ -83,6 +114,9 @@ int main(int argc, char* argv[]) {
 	unsigned short delta_light;
 	unsigned short average;
 	unsigned long factor;
+	
+	// compute
+	int flat, light, aflat,alight;
 	
 	if (argc != 4){
 		printf("Usage: %s <raw> <flat> <result>\n",argv[0]);
@@ -106,11 +140,47 @@ int main(int argc, char* argv[]) {
 			}
 			average_flat = (unsigned short)(lint_flat/(unsigned long)nelements);
 			average_light = (unsigned short)(lint_light/(unsigned long)nelements);
+			//average_flat = median(b,(int)nelements);
+			//average_light = median(a,(int)nelements);			
+			
 			printf("flat : average= %d min=%d max=%d\n",average_flat,mini_flat,maxi_flat);
 			printf("light: average= %d min=%d max=%d\n",average_light,mini_light,maxi_light);
-			delta_flat = maxi_flat - mini_flat;
-			delta_light = maxi_light - mini_light;
+			//delta_flat = maxi_flat - mini_flat;
+			//delta_light = maxi_light - mini_light;
+			
+			//average_flat = mini_flat; // darken
+
+			//algo 6
+			//for(i=0;i<nelements;i++){
+				//flat = (int) b[i];
+				//light = (int) a[i];
+				//aflat = (int) average_flat;
+				//alight = (int) average_light;
+				
+				//light += alight * (aflat - flat)/aflat/5; 
+				
+				//if (light > 65535) light = 65535;
+				//if (light < 0 ) light = 0;
+				//c[i] = (unsigned short) light;
+			//}
+			
+			
+			// algo 5 median
+			/*
+			average_flat = median(b,(int)nelements);
+			printf("median is %d\n",average_flat);
+			for(i=0;i<nelements;i++){
+				lint_flat = (unsigned long)a[i]*(unsigned long)average_flat;
+				if ( b[i] != 0){
+					c[i] = (unsigned short)(lint_flat/(unsigned long) b[i]);
+				} else {
+					c[i] = 65535;
+				}
+			}
+			*/
+			//
 			// algo 4
+			/*
 			factor = 65535L*(unsigned long)mini_flat/(unsigned long)maxi_light;
 			lint_flat = (unsigned long)mini_light*factor/(unsigned long)maxi_flat;
 			printf("factor=%ld min=%ld\n",factor,lint_flat);
@@ -118,18 +188,20 @@ int main(int argc, char* argv[]) {
 				lint_flat = (unsigned long)a[i]*factor/(unsigned long)b[i];
 				c[i] = (unsigned short) lint_flat;
 			}
+			*/
 			// algo 1
 			// 
 			// -> average_flat/flat_pixel * light_pixel
-			//
-			//for(i=0;i<nelements;i++){
-				//lint_flat = (unsigned long)a[i]*(unsigned long)average_flat;
-				//if ( b[i] != 0){
-					//c[i] = (unsigned short)(lint_flat/(unsigned long) b[i]);
-				//} else {
-					//c[i] = 65535;
-				//}
-			//}
+			
+			for(i=0;i<nelements;i++){
+				lint_flat = (unsigned long)a[i]*(unsigned long)average_flat;
+				if ( b[i] != 0){
+					c[i] = (unsigned short)(lint_flat/(unsigned long) b[i]);
+				} else {
+					c[i] = 65535;
+				}
+			}
+			
 			// algo 2
 			//
 			// 
